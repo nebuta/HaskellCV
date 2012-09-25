@@ -44,54 +44,7 @@ extern "C" {
     int meanMat(int id){
         return 0;
     }
-    
-    void maxDetectTest(){
-        char imgfile[] = "/Users/hiroyuki/Google Drive/Documents/Groves Lab Data/Scope Pics/120423 Scope 5 TCR Tracking/Sample 1b and 3b/sample1b_crop.tif";
-        Mat image = imread(imgfile);
-        int dim = image.dims;
-        int numCh = image.channels();
-        printf("dimension: %d\nchannels: %d",dim,numCh);
-    }
-    
-    void cellDetectTest(){
-        /* 細胞検出器のロード */
-        CascadeClassifier cascade = CascadeClassifier::CascadeClassifier( "/Users/hiroyuki/Downloads/MachineLearning/HOG/cascade.xml" );
-        
-        int fileNum;
-        
-        for(fileNum = 1; fileNum <= 398; fileNum++){
-            /* 画像のロード */
-            char imgfile[1000];
-            sprintf(imgfile,"/Users/hiroyuki/Downloads/MachineLearning/OK/%04d.jpg",fileNum);
-            Mat image = imread(imgfile);
-            
-            /* 細胞検出 */
-            vector<Rect> rects;
-            cascade.detectMultiScale( image, rects, 1.1, 3, 0, Size(80,80), Size(200,200) );
-            
-            groupRectangles(rects,0);
-            
-            /* 細胞領域の描画 */
-            int i;
-            for( i = 0; i < rects.size(); i++ )
-            {
-                /* extract the rectanlges only */
-                Rect r = rects.at(i);
-                int width = r.width;
-                Point center = Point(r.x+width/2,r.y+width/2);
-                int radius = width / 2;
-                circle(image,center,radius,CV_RGB(255,0,0),3);
-                //                rectangle(image,r,CV_RGB(255,0,0),3);
-            }
-            
-            /* 画像の表示 */
-            cvNamedWindow( "cell_detect", 0 );
-            imshow( "cell_detect", image );
-            waitKey(0);
-        }
-        return;
-    }
-    
+       
     int randMat(int y,int x){
         Mat mat(y, x, CV_8UC1);
         new_id++;
@@ -124,6 +77,8 @@ extern "C" {
         return mats.at(map<int,Mat>::key_type(id));
     }
     
+    
+    //ToDo: This is still a bug: mat is alloced in stack, not heap.
     Mat* readImg(char* path){
         string str(path);
         Mat mat = cv::imread(str);
