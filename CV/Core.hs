@@ -74,11 +74,13 @@ randMat y x = fromId (c_randMat (fromIntegral y) (fromIntegral x))
 zeros :: Int -> Mat
 zeros n = fromId (c_zeros (fromIntegral n))
 
+{-
 vals :: Mat -> [Int]
 vals (Mat id) = map (fromIntegral . c_valAt (fromIntegral id)) (map fromIntegral [0..len-1])
   where
     len :: Int
     len = fromIntegral (c_length (fromIntegral id))
+-}
 
 -- 2D Filters
 --

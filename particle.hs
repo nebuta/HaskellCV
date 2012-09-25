@@ -1,5 +1,7 @@
 module Main where
 
+import CV.Core hiding (gauss)
+
 data Pos3D = Pos3D {
   frame :: Int,
   xx :: Double,
@@ -101,3 +103,6 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
   where
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
+
+
+main = putStrLn "stub"

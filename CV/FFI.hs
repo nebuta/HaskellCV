@@ -11,7 +11,7 @@ type MatId = CInt
 
 foreign import ccall "matTest" c_matTest :: IO ()
 foreign import ccall "zeros1D" c_zeros :: CInt -> CInt
-foreign import ccall "valAt" c_valAt :: CInt -> CInt -> CInt
+-- foreign import ccall "valAt" c_valAt :: CInt -> CInt -> CInt
 foreign import ccall "length" c_length :: CInt -> CInt
 foreign import ccall "cellDetectTest" c_cellDetectTest :: IO ()
 foreign import ccall "maxDetectTest" c_maxDetectTest :: IO ()
