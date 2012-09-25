@@ -104,20 +104,15 @@ extern "C" {
         return new_id;
     }
     
-    int monoColor(int h, int w, int r, int g, int b){
-        new_id++;
-        Mat_<Vec3b> mat(h,w,Vec3b(r,g,b));
-        mats.insert(map<int,Mat>::value_type(new_id,mat));
-        return new_id;
+    Mat* monoColor(int h, int w, int r, int g, int b){
+        Mat_<Vec3b>* mat = new Mat_<Vec3b>(h,w,Vec3b(r,g,b));
+        return mat;
     }
     
-    void showMat(int id){
-        Mat mat = mats.at(map<int,Mat>::key_type(id));
-        printf("showMat() called %d x %d\n",mat.rows,mat.cols);
-        imshow("showMat()",mat);
+    void showMat(Mat* mat){
+        imshow("showMat()",*mat);
         waitKey();
     }
-    
 
     int registerMat(Mat &mat){
         new_id++;
@@ -129,10 +124,10 @@ extern "C" {
         return mats.at(map<int,Mat>::key_type(id));
     }
     
-    int readImg(char* path){
+    Mat* readImg(char* path){
         string str(path);
         Mat mat = cv::imread(str);
-        return registerMat(mat);
+        return &mat;
     }
     
     void matTest()
