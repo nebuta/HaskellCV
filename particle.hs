@@ -2,6 +2,7 @@ module Main where
 
 import CV.Core
 import CV.Filter
+import CV.Demo
 
 getAt :: Pos -> Mat2D -> Pixel
 getAt pos mat = GrayPixel 0 -- Stub
@@ -37,10 +38,15 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = do
-  let imgs = map (monoColor (Channel B16) 300 300) [yellow,blue,red]
---  mapM_ readImg (replicate 100 "test.jpg")
-  img <- readImg "test.jpg"
-  let gray = fromImg img :: GrayImage     -- This is so cool! Automatic image conversion by polymorphic type.
-  mapM_ showMat imgs
-  showImg (apply (gauss 3) gray)
+main = demos
+
+maintrue :: IO ()
+maintrue = do
+  img <- readImg "cell.jpg"
+  let ps = findParticles (fromImg img)
+  return ()
+
+demos :: IO ()
+demos = do
+  demo1
+  demo2

@@ -13,10 +13,6 @@ type MatId = CInt
 
 -- Matrix basic operations
 
--- foreign import ccall unsafe "matTest" c_matTest :: IO ()
--- foreign import ccall "zeros1D" c_zeros :: CInt -> CInt
--- foreign import ccall "valAt" c_valAt :: CInt -> CInt -> CInt
--- foreign import ccall "length" c_length :: CInt -> CInt
 foreign import ccall "randMat" c_randMat :: CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
