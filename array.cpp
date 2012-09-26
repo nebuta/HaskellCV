@@ -19,36 +19,34 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
-    int abs(int id) {
-        Mat res = cv::abs(getMat(id));
-        return registerMat(res);
-    }
-    int add(int idA, int idB){
-        Mat& mat1 = getMat(idA);
-        Mat& mat2 = getMat(idB);
-        Mat res = mat1 + mat2;
-        return registerMat(res);
-    }
-    
-    int subMat(int idA, int idB){
-        Mat& mat1 = getMat(idA);
-        Mat& mat2 = getMat(idB);
-        Mat res = mat1 - mat2;
-        return registerMat(res);
-    }
-    
-    int eqMat(int idA, int idB){
-        Mat& mat1 = getMat(idA);
-        Mat& mat2 = getMat(idB);
-        int res = 0;    // false always: Stub!!!!!
+    Mat* m_abs(Mat* mat) {
+        Mat m = cv::abs(*mat);
+        Mat *res = new Mat(m);
         return res;
     }
     
-    int addWeighted(int ma, double alpha, int mb, double beta, double gamma) {
-        Mat mat1 = getMat(ma);
-        Mat mat2 = getMat(mb);
+    Mat* m_add(Mat* a, Mat* b){
+        Mat mat = (*a) + (*b);
+        Mat *res = new Mat(mat);
+        return res;
+    }
+    
+    Mat* m_sub(Mat* a, Mat* b){
+        Mat mat = (*a) - (*b);
+        Mat *res = new Mat(mat);
+        return res;
+    }
+    
+    int m_eq(Mat* a, Mat* b){
+        Mat mat = (*a) - (*b);
+        int res = 0;        //Stub!! always false
+        return res;
+    }
+    
+    Mat* addWeighted(Mat* ma, double alpha, Mat* mb, double beta, double gamma) {
         Mat res;
-        cv::addWeighted(mat1, alpha, mat2, beta, gamma, res);
-        return registerMat(res);
+        cv::addWeighted(*ma, alpha, *mb, beta, gamma, res);
+        Mat *res2 = new Mat(res);
+        return res2;
     }
 }

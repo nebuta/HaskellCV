@@ -1,6 +1,7 @@
 module Main where
 
 import CV.Core
+import CV.Filter
 
 getAt :: Pos -> Mat2D -> Pixel
 getAt pos mat = GrayPixel 0 -- Stub
@@ -22,10 +23,10 @@ filterThresAndDist thres dist ps = filter (f thres dist ps) ps
     f th di ps p = True -- Stub
 
 prefilter :: Iso GrayImage
-prefilter = gauss 3
+prefilter = mygauss 3
 
-gauss :: (Image a) => Int -> Iso a
-gauss sigma img = img -- stub
+mygauss :: (Image a) => Int -> Iso a
+mygauss sigma img = img -- stub
 
 data Traj = Traj [Pos3D]
 
@@ -43,5 +44,6 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
 
 main = do
   let imgs = map (monoColor (Channel B16) 300 300) [yellow,blue,red]
---  img <- readImg "test.jpg"
+  img <- readImg "test.jpg"
   mapM_ showMat imgs
+  showMat img

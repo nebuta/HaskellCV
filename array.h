@@ -12,7 +12,7 @@
 #include <iostream>
 
 extern "C" {
-int add(int idA, int idB);
+
 }
 
 #endif /* defined(__HaskellCV__array__) */
