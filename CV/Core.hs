@@ -23,6 +23,9 @@ data Mat1D = Mat1D Ptr Color Int
 data Mat2D = Mat2D Ptr Color Int Int -- width, height
 data Mat3D = Mat3D Ptr Color Int Int Int
 
+data Filter a b = Filter (a -> b)
+type IsoFilter a = Filter a a
+
 data Pos3D = Pos3D {
   frame :: Int,
   xx :: Double,
@@ -44,7 +47,7 @@ instance Eq Mat where
           is_eq <- c_eqMat aa bb
           return (is_eq /= ci 0)
 
-data GrayImage = GrayImage Mat2D
+data GrayImage = GrayImage Mat
 
 data Pixel = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
 
@@ -57,17 +60,27 @@ data Strel = Disc Double | Rect Double Double | Line Angle Double
 dilate :: (Image a) => Strel -> Iso a
 dilate se img = img -- stub
 
+data GImage = GImage Mat  -- "Generic Image"
 
 class Image a where
-  mat :: a -> Mat2D
+  mat :: a -> Mat
+  fromMat :: Mat -> a
   pixel :: Pos -> a -> Pixel
   width :: a -> Int
   height :: a -> Int
   dim :: a -> (Int,Int)
   dim img = (width img,height img)
+  fromImg :: (Image b) => b -> a 
+  fromImg img = fromMat (mat img) -- default. Convert mat data if necessary.
+
+instance Image GImage where
+  mat (GImage m) = m
+  fromMat m = GImage m
 
 instance Image GrayImage where
   mat (GrayImage m) = m
+  fromMat m = GrayImage m
+  fromImg img = GrayImage (cvtColor rgbToGray (mat img))
 --  pixel :: Pos -> GrayImage -> GrayPixel
 --  pixel pos (GrayImage m) = getAt pos m --stub
 
@@ -149,6 +162,9 @@ showMat (Mat m) = do
   withForeignPtr m $ \mm -> do
     c_showMat mm
 
+showImg :: (Image a) => a -> IO ()
+showImg = showMat . mat
+
 {-
 matsize :: Mat -> Int
 matsize (Mat id) = fromIntegral (c_length (fromIntegral id))
@@ -187,17 +203,31 @@ rgbToGray = ConvertCode (ci 7)
 addWeighted :: Mat -> Double -> Mat -> Double -> Double -> Mat
 addWeighted (Mat ma) alpha (Mat mb) beta gamma = fromId $ c_addWeighted (ci ma) (cd alpha) (ci mb) (cd beta) (cd gamma)
 
-cvtColor :: ConvertCode -> Mat -> Mat
-cvtColor (ConvertCode code) (Mat a) = fromId $ c_cvtColor code (ci a)
 
 -}
 
 
 -- Image operations
-readImg :: FilePath -> IO Mat
+
+readImg :: FilePath -> IO GImage
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
     mat <- newForeignPtr finalizerFree mat_ptr 
-    return (Mat mat)
+    return $ GImage (Mat mat)
+
+-- Image color conversion
+--
+
+data ConvertCode = ConvertCode CInt
+rgbToGray = ConvertCode (ci 7)
+
+
+cvtColor :: ConvertCode -> Mat -> Mat
+cvtColor (ConvertCode code) (Mat m)
+  = unsafePerformIO $ do
+      withForeignPtr m $ \mm -> do
+        mat_ptr <- c_cvtColor code mm
+        mat <- newForeignPtr finalizerFree mat_ptr
+        return (Mat mat)
 

@@ -8,6 +8,7 @@ getAt pos mat = GrayPixel 0 -- Stub
 
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
+  where prefilter = apply (gauss 3)
 
 detect :: GrayImage -> [Pos]
 detect img = filterThresAndDist percentileThres distThres $ findIndexMat Equal img dilated
@@ -21,12 +22,6 @@ filterThresAndDist thres dist ps = filter (f thres dist ps) ps
   where
     f :: Double -> Double -> [Pos] -> Pos -> Bool
     f th di ps p = True -- Stub
-
-prefilter :: Iso GrayImage
-prefilter = mygauss 3
-
-mygauss :: (Image a) => Int -> Iso a
-mygauss sigma img = img -- stub
 
 data Traj = Traj [Pos3D]
 
@@ -44,6 +39,8 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
 
 main = do
   let imgs = map (monoColor (Channel B16) 300 300) [yellow,blue,red]
+--  mapM_ readImg (replicate 100 "test.jpg")
   img <- readImg "test.jpg"
+  let gray = fromImg img :: GrayImage     -- This is so cool! Automatic image conversion by polymorphic type.
   mapM_ showMat imgs
-  showMat img
+  showImg (apply (gauss 3) gray)
