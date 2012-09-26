@@ -17,11 +17,11 @@ type Iso a = a -> a
 
 data Color = RGBColor | Gray | HSV
 
-type Ptr = Int -- stub
-
+{-
 data Mat1D = Mat1D Ptr Color Int
 data Mat2D = Mat2D Ptr Color Int Int -- width, height
 data Mat3D = Mat3D Ptr Color Int Int Int
+-}
 
 data Filter a b = Filter (a -> b)
 type IsoFilter a = Filter a a
@@ -122,7 +122,7 @@ cvAbs (Mat m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       mat_ptr <- c_abs mm
-      mat <- newForeignPtr finalizerFree mat_ptr
+      mat <- newForeignPtr cmatFree mat_ptr
       return (Mat mat)
 
 -- |Matrix addition
@@ -132,7 +132,7 @@ cvAbs (Mat m) =
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_addMat aa bb
-          mat <- newForeignPtr finalizerFree mat_ptr
+          mat <- newForeignPtr cmatFree mat_ptr
           return (Mat mat)
           
 -- |Matrix subtraction
@@ -142,7 +142,7 @@ cvAbs (Mat m) =
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_subMat aa bb
-          mat <- newForeignPtr finalizerFree mat_ptr
+          mat <- newForeignPtr cmatFree mat_ptr
           return (Mat mat)
 
 
@@ -154,7 +154,7 @@ monoColor :: Channel -> Int -> Int -> RGB -> Mat
 monoColor c h w (RGB r g b)
   = unsafePerformIO $ do
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
-      mat <- newForeignPtr finalizerFree mat_ptr
+      mat <- newForeignPtr cmatFree mat_ptr
       return (Mat mat)
 
 showMat :: Mat -> IO ()
@@ -213,7 +213,7 @@ readImg :: FilePath -> IO GImage
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
-    mat <- newForeignPtr finalizerFree mat_ptr 
+    mat <- newForeignPtr cmatFree mat_ptr 
     return $ GImage (Mat mat)
 
 -- Image color conversion
@@ -228,6 +228,6 @@ cvtColor (ConvertCode code) (Mat m)
   = unsafePerformIO $ do
       withForeignPtr m $ \mm -> do
         mat_ptr <- c_cvtColor code mm
-        mat <- newForeignPtr finalizerFree mat_ptr
+        mat <- newForeignPtr cmatFree mat_ptr
         return (Mat mat)
 

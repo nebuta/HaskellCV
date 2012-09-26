@@ -25,7 +25,7 @@ gaussian kw kh sx sy (Mat m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       mat_ptr <- c_gaussian (ci kw) (ci kh) (ci sx) (ci sy) mm
-      mat <- newForeignPtr finalizerFree mat_ptr
+      mat <- newForeignPtr cmatFree mat_ptr
       return (Mat mat)
 
 

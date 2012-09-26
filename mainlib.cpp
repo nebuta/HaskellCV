@@ -24,6 +24,11 @@ extern "C" {
         Mat m = mats.at(map<int,Mat>::key_type(id));
         return *(m.ptr<int>(pos));
     } */
+    
+    void matFree(Mat* mat){
+        mat->release();
+    }
+    
     int length(int id){
         printf("id: %d\n",id);
         printf("%d matrices in memory\n",(int)(mats.size()));

@@ -4,9 +4,6 @@ import CV.Core
 import CV.Filter
 import CV.Demo
 
-getAt :: Pos -> Mat2D -> Pixel
-getAt pos mat = GrayPixel 0 -- Stub
-
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
   where prefilter = apply (gauss 3)
@@ -49,4 +46,7 @@ maintrue = do
 demos :: IO ()
 demos = do
   demo1
+  demo3
+  demo3
+  demo3
   demo2
