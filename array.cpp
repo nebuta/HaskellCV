@@ -38,8 +38,15 @@ extern "C" {
     }
     
     int m_eq(Mat* a, Mat* b){
-        Mat mat = (*a) - (*b);
-        int res = 0;        //Stub!! always false
+        Mat res(a->size(),CV_8UC1);
+        compare(*a,*b,res,CMP_NE);
+        int count = countNonZero(res);
+        return (count == 0) ? 1 : 0;
+    }
+    
+    Mat* m_compare(Mat* a, Mat* b, int code){
+        Mat *res = new Mat();
+        compare(*a,*b,*res,code);
         return res;
     }
     

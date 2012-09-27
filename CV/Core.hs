@@ -13,6 +13,8 @@ import CV.FFI
 import Data.ByteString (unpack)
 import Data.String
 
+data Mat = Mat !(ForeignPtr CMat)
+
 type Iso a = a -> a
 
 data Color = RGBColor | Gray | HSV
@@ -46,7 +48,7 @@ data Pos = Pos {
 
 data Coord = Coord {
   xi :: Int,
-  yi :: Int,
+  yi :: Int
 }
 
 instance Eq Mat where
@@ -114,20 +116,23 @@ cd :: Double -> CDouble
 cd = realToFrac
 
 
-data CompareFun = Equal | Smaller | Bigger | AnyFun (Pixel->Pixel->Bool)
+data CmpFun = CmpFun CInt | MyCmpFun (Pixel->Pixel->Bool)
 
-findIndexMat :: (Image a) => CompareFun -> a -> a -> [Coord]
-findIndexMat Equal imgA imgB = findIndexMat (AnyFun (==)) imgA imgB   --ToDo: replace with the built-in C++ function
-findIndexMat Smaller imgA imgB = findIndexMat (AnyFun (<)) imgA imgB
-findIndexMat Bigger imgA imgB = findIndexMat (AnyFun (>)) imgA imgB
-findIndexMat (AnyFun predicate) imgA imgB
-    | dim imgA == dim imgB = filter (f predicate) ps
-    | otherwise = []
-  where
-    ps :: [Pos]
-    ps = [Pos x y | x<-map fromIntegral [0..width imgA-1],y<-map fromIntegral [0..height imgA-1]]
-    f :: (Pixel -> Pixel -> Bool) -> Pos -> Bool
-    f pred pos = pred (pixel pos imgA) (pixel pos imgB)
+cmpEqual = CmpFun 0
+cmpGT = CmpFun 1
+cmpGE = CmpFun 2
+cmpLT = CmpFun 3
+cmpLE = CmpFun 4
+cmpNE = CmpFun 5
+
+compare :: CmpFun -> Mat -> Mat -> Mat
+compare (CmpFun code) (Mat ma) (Mat mb)
+  = unsafePerformIO $ do
+      withForeignPtr ma $ \mma -> do
+        withForeignPtr mb $ \mmb -> do
+          mat_ptr <- c_compare mma mmb code
+          mat <- newForeignPtr cmatFree mat_ptr
+          return (Mat mat)
 
 -- Matrix operations
 

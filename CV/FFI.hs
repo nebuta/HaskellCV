@@ -7,7 +7,6 @@ import Foreign.Ptr
 import Foreign.ForeignPtr (ForeignPtr)
 
 data CMat -- Mat type in C++ OpenCV
-data Mat = Mat !(ForeignPtr CMat)
 
 data CFilterEngine
 data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
@@ -40,6 +39,7 @@ foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> 
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_eq" c_eqMat :: Ptr CMat -> Ptr CMat -> IO CInt
+foreign import ccall "m_compare" c_compare :: Ptr CMat -> Ptr CMat -> CInt -> IO (Ptr CMat)
 
 foreign import ccall "addWeighted" c_addWeighted :: Ptr CMat -> CDouble -> Ptr CMat -> CDouble -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat) 
