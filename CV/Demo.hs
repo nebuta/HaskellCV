@@ -24,4 +24,6 @@ demo3 = do
   let res = foldl' (\img s -> (apply (gauss s)) img) gray (replicate 10000 3)
   showImg res
 
- 
+demo4 = do
+  img <- readImg "test.jpg"
+  mapM_ (showImg . flip apply img) [gauss 3, medianFilter 3,medianFilter 5, medianFilter 7,laplacian 3 1 0, bilateral 3 5 5, sobel 3 3 1 1 0]

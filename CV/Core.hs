@@ -44,6 +44,11 @@ data Pos = Pos {
   y :: Double
 } deriving Show
 
+data Coord = Coord {
+  xi :: Int,
+  yi :: Int,
+}
+
 instance Eq Mat where
   (Mat a) == (Mat b) = unsafePerformIO $ do
     withForeignPtr a $ \aa -> do
@@ -111,7 +116,7 @@ cd = realToFrac
 
 data CompareFun = Equal | Smaller | Bigger | AnyFun (Pixel->Pixel->Bool)
 
-findIndexMat :: (Image a) => CompareFun -> a -> a -> [Pos]
+findIndexMat :: (Image a) => CompareFun -> a -> a -> [Coord]
 findIndexMat Equal imgA imgB = findIndexMat (AnyFun (==)) imgA imgB   --ToDo: replace with the built-in C++ function
 findIndexMat Smaller imgA imgB = findIndexMat (AnyFun (<)) imgA imgB
 findIndexMat Bigger imgA imgB = findIndexMat (AnyFun (>)) imgA imgB

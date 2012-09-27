@@ -18,7 +18,7 @@ extern "C" {
 
     using namespace std;
     
-    cv::Mat* f_gaussian(int kernel_w, int kernel_h, int sigma_x, int sigma_y, Mat* mat) {
+    cv::Mat* f_gaussian(int kernel_w, int kernel_h, double sigma_x, double sigma_y, Mat* mat) {
         Mat* res = new Mat();
         cv::GaussianBlur(*mat, *res, Size(kernel_w,kernel_h),sigma_x,sigma_y);
         return res;
@@ -27,6 +27,25 @@ extern "C" {
     cv::Mat* f_medianFilter(int ksize, Mat* mat) {
         Mat* res = new Mat();
         cv::medianBlur(*mat, *res, ksize);
+        return res;
+    }
+    
+    
+    cv::Mat* f_laplacian(int ksize, double scale, double delta, Mat* mat) {
+        Mat* res = new Mat();
+        cv::Laplacian(*mat, *res, mat->depth(),ksize,scale,delta);
+        return res;
+    }
+    
+    cv::Mat* f_bilateral(int d, double sigmaColor, double sigmaSpace, Mat* mat) {
+        Mat* res = new Mat();
+        cv::bilateralFilter(*mat, *res, d, sigmaColor, sigmaSpace);
+        return res;
+    }
+
+    cv::Mat* f_sobel(int dx, int dy, int ksize, double scale, double delta, Mat* mat) {
+        Mat* res = new Mat();
+        cv::Sobel(*mat, *res, dx, dy, ksize, scale, delta);
         return res;
     }
     
