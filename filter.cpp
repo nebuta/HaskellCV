@@ -24,9 +24,22 @@ extern "C" {
         return res;
     }
     
+    cv::Mat* f_medianFilter(int ksize, Mat* mat) {
+        Mat* res = new Mat();
+        cv::medianBlur(*mat, *res, ksize);
+        return res;
+    }
+    
     cv::Mat* f_boxFilter(int kernel_w, int kernel_h, Mat* mat) {
         Mat* res = new Mat();
         cv::boxFilter(*mat, *res, mat->depth(), Size(kernel_w,kernel_h));
+        return res;
+    }
+    
+    cv::Mat* f_derivFilter(int dx, int dy, int ksize, Mat* mat) {
+        Ptr<FilterEngine> Fderiv = createDerivFilter(mat->type(),mat->type(),dx,dy,ksize);
+        Mat* res = new Mat();
+        Fderiv->apply(*mat,*res);
         return res;
     }
     

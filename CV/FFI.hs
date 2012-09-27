@@ -52,6 +52,8 @@ foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 foreign import ccall "f_gaussian" c_gaussian :: CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "f_boxFilter" c_boxFilter :: CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_derivFilter" c_derivFilter :: CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_medianFilter" c_medianFilter :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 -- foreign import ccall "f_createBoxFilter" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
 
