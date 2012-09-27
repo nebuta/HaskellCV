@@ -61,6 +61,7 @@ foreign import ccall "f_sobel" c_sobel :: CInt -> CInt -> CInt -> CDouble -> CDo
 -- Filters using mask
 foreign import ccall "f_getStructuringElement" c_getStructuringElement :: CInt -> CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall unsafe "f_dilate" c_dilate :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall unsafe "f_erode" c_erode :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 
 
 -- foreign import ccall "f_createBoxFilter" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)

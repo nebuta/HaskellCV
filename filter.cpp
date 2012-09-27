@@ -83,5 +83,9 @@ extern "C" {
         cv::dilate(*mat,*res,*strel);
         return res;
     }
-    
+    cv::Mat* f_erode(Mat* strel, Mat* mat){
+        Mat* res = new Mat();
+        cv::erode(*mat,*res,*strel);
+        return res;
+    }
 }
