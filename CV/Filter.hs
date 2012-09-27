@@ -3,11 +3,36 @@ module CV.Filter where
 import CV.Core
 import CV.FFI
 
+import Foreign.C
 import Foreign.Ptr (Ptr)
 import Foreign.ForeignPtr (ForeignPtr,newForeignPtr)
 import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.Marshal.Alloc (finalizerFree)
 import System.IO.Unsafe (unsafePerformIO)
+
+data StrEl = Rect Int Int | Ellipse Int Int | Cross Int Int
+fromStrEl :: StrEl -> Mat
+fromStrEl el =
+  unsafePerformIO $ do
+    mat_ptr <- c_getStructuringElement (t el) (ww el) (hh el)
+    mat <- newForeignPtr cmatFree mat_ptr
+    return (Mat mat)
+  where     -- ToDo: too long and ugly, think about redesigning
+    t (Rect _ _) = strelRect
+    t (Ellipse _ _) = strelEllipse
+    t (Cross _ _) = strelCross
+    ww (Rect w _) = ci w
+    ww (Ellipse w _) = ci w
+    ww (Cross w _) = ci w
+    hh (Rect _ h) = ci h
+    hh (Cross _ h) = ci h
+    hh (Ellipse _ h) = ci h
+
+strelRect, strelCross, strelEllipse :: CInt
+strelRect = 0
+strelCross = 1
+strelEllipse = 2
+
 
 --
 -- Functions that apply to Mat
@@ -50,9 +75,6 @@ bilateral d sigmaColor sigmaSpace = generalCFilter (c_bilateral (ci d) (cd sigma
 sobel :: Int -> Int -> Int -> Double -> Double -> Iso Mat
 sobel dx dy ksize scale delta = generalCFilter (c_sobel (ci dx) (ci dy) (ci ksize) (cd scale) (cd delta))
 
--- dilate 
--- erode
-
 generalCFilter :: (Ptr CMat -> IO (Ptr CMat)) -> Iso Mat
 generalCFilter f (Mat m) =
   unsafePerformIO $ do
@@ -60,4 +82,22 @@ generalCFilter f (Mat m) =
       mat_ptr <- f mm
       mat <- newForeignPtr cmatFree mat_ptr
       return (Mat mat)
+
+-- Filters using another Mat
+
+dilate :: Mat -> Iso Mat
+dilate kernel mat = generalCFilter2 c_dilate kernel mat
+    
+
+generalCFilter2 :: (Ptr CMat -> Ptr CMat -> IO (Ptr CMat)) -> Mat -> Iso Mat
+generalCFilter2 f (Mat p) (Mat m) =
+  unsafePerformIO $ do
+    withForeignPtr p $ \pp -> do
+      withForeignPtr m $ \mm -> do
+        mat_ptr <- f pp mm
+        mat <- newForeignPtr cmatFree mat_ptr
+        return (Mat mat)
+  
+-- erode
+
 

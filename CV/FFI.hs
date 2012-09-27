@@ -11,7 +11,6 @@ data CMat -- Mat type in C++ OpenCV
 data CFilterEngine
 data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
 
-
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
 
 -- Matrix basic operations
@@ -57,6 +56,12 @@ foreign import ccall "f_medianFilter" c_medianFilter :: CInt -> Ptr CMat -> IO (
 foreign import ccall "f_laplacian" c_laplacian:: CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "f_bilateral" c_bilateral :: CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "f_sobel" c_sobel :: CInt -> CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
+
+
+-- Filters using mask
+foreign import ccall "f_getStructuringElement" c_getStructuringElement :: CInt -> CInt -> CInt -> IO (Ptr CMat)
+foreign import ccall unsafe "f_dilate" c_dilate :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+
 
 -- foreign import ccall "f_createBoxFilter" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
 

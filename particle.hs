@@ -9,11 +9,11 @@ findParticles = detect . prefilter
   where prefilter = apply (gauss 3)
 
 detect :: GrayImage -> [Pos]
-detect img = filterThresAndDist percentileThres distThres $ refinePos $ findIndexMat cmpEqual (mat img) (mat dilated)
+detect img = filterThresAndDist percentileThres distThres $ refinePos $ findIndexMat cmpEqual (mat img) dilated
   where
     percentileThres = 10    -- in %
     distThres = 4
-    dilated = dilate (Disc 3) img
+    dilated = dilate (fromStrEl (Ellipse 3 3)) (mat img)
 
 findIndexMat :: CmpFun -> Mat -> Mat -> [Coord]
 findIndexMat _ _ _ = []   -- Stub!!

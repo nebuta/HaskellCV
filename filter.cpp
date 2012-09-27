@@ -18,6 +18,8 @@ extern "C" {
 
     using namespace std;
     
+    //Simple filters without mask
+    
     cv::Mat* f_gaussian(int kernel_w, int kernel_h, double sigma_x, double sigma_y, Mat* mat) {
         Mat* res = new Mat();
         cv::GaussianBlur(*mat, *res, Size(kernel_w,kernel_h),sigma_x,sigma_y);
@@ -65,6 +67,21 @@ extern "C" {
     cv::FilterEngine* f_makeGaussian(int kernel_w, int kernel_h, int sigma_x, int sigma_y) {
         //return cv::createGaussianFilter(*mat, *res, Size(kernel_w,kernel_h),sigma_x,sigma_y);
         return NULL; //Stub!!!
+    }
+    
+    //Making mask
+    
+    cv::Mat* f_getStructuringElement(int shape, int width, int height){
+        Mat mat = getStructuringElement(shape, Size(width,height));
+        Mat* res = new Mat(mat);
+        return res;
+    }
+    
+    //Filters that use mask
+    cv::Mat* f_dilate(Mat* mat, Mat* strel){
+        Mat* res = new Mat();
+        cv::dilate(*mat,*res,*strel);
+        return res;
     }
     
 }

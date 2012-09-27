@@ -69,10 +69,6 @@ data Value = ValueD1 Double | ValueD3 Double Double Double | ValueI1 Int | Value
 
 type Angle = Double
 
-data Strel = Disc Double | Rect Double Double | Line Angle Double 
-
-dilate :: (Image a) => Strel -> Iso a
-dilate se img = img -- stub
 
 data GImage = GImage Mat  -- "Generic Image"
 
