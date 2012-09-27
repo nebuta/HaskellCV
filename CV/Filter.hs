@@ -8,24 +8,36 @@ import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.Marshal.Alloc (finalizerFree)
 import System.IO.Unsafe (unsafePerformIO)
 
-
-apply :: Image a => Iso Mat -> a -> a
-apply f img = fromMat $ f (mat img)
-
 --
 -- Functions that apply to Mat
 
 -- Default for gaussian
-gauss :: Int -> Iso Mat
+gauss :: Double -> Iso Mat
 gauss sigma mat = gaussian 0 0 sigma 0 mat
 
 -- Full feature gaussian
-gaussian :: Int -> Int -> Int -> Int -> Iso Mat
+gaussian :: Int -> Int -> Double -> Double -> Iso Mat
 gaussian kw kh sx sy (Mat m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
-      mat_ptr <- c_gaussian (ci kw) (ci kh) (ci sx) (ci sy) mm
+      mat_ptr <- c_gaussian (ci kw) (ci kh) (cd sx) (cd sy) mm
       mat <- newForeignPtr cmatFree mat_ptr
       return (Mat mat)
 
+
+boxFilter :: Int -> Int -> Iso Mat
+boxFilter kx ky (Mat m) = 
+  unsafePerformIO $ do
+    withForeignPtr m $ \mm -> do
+      mat_ptr <- c_boxFilter (ci kx) (ci ky) mm
+      mat <- newForeignPtr cmatFree mat_ptr
+      return (Mat mat)
+      
+
+-- BFilter :: built-in filter.
+data BFilter = Gauss Int Int Double Double | BoxFilter Int Int
+
+applyB :: BFilter -> Mat -> Mat
+applyB (Gauss kx ky s1 s2) mat = gaussian kx ky s1 s2 mat
+applyB (BoxFilter kx ky) mat = boxFilter kx ky mat
 

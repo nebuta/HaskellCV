@@ -23,6 +23,13 @@ data Mat2D = Mat2D Ptr Color Int Int -- width, height
 data Mat3D = Mat3D Ptr Color Int Int Int
 -}
 
+
+
+apply :: Image a => Iso Mat -> a -> a
+apply f img = fromMat $ f (mat img)
+
+
+
 data Filter a b = Filter (a -> b)
 type IsoFilter a = Filter a a
 
@@ -97,6 +104,9 @@ green = RGB 0 255 0
 
 ci :: Int -> CInt
 ci = fromIntegral
+
+cd :: Double -> CDouble
+cd = realToFrac
 
 
 data CompareFun = Equal | Smaller | Bigger | AnyFun (Pixel->Pixel->Bool)
@@ -191,8 +201,6 @@ vals (Mat id) = map (fromIntegral . c_valAt (fromIntegral id)) (map fromIntegral
 
 
 
-cd :: Double -> CDouble
-cd = realToFrac
 
 
 -- Color conversion

@@ -17,9 +17,6 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
-    static map<int,Mat> mats;
-    static int new_id = 0;
-    
 /*    int valAt(int id,int pos){
         Mat m = mats.at(map<int,Mat>::key_type(id));
         return *(m.ptr<int>(pos));
@@ -27,14 +24,6 @@ extern "C" {
     
     void matFree(Mat* mat){
         mat->release();
-    }
-    
-    int length(int id){
-        printf("id: %d\n",id);
-        printf("%d matrices in memory\n",(int)(mats.size()));
-        Mat m = mats.at(0);
-        printf("(%d,%d)",m.size().width,m.size().height);
-        return m.size().height * m.size().width;
     }
     
     //Stub
@@ -69,12 +58,6 @@ extern "C" {
     Mat* cvtColor(int code, Mat* mat) {
         Mat* res = new Mat();
         cv::cvtColor(*mat,*res,code);
-        return res;
-    }
-    
-    Mat* gaussian(int kernel_w, int kernel_h, int sigma_x, int sigma_y, Mat* mat) {
-        Mat* res = new Mat();
-        cv::GaussianBlur(*mat, *res, Size(kernel_w,kernel_h),sigma_x,sigma_y);
         return res;
     }
     

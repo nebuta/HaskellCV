@@ -1,4 +1,4 @@
 #!/bin/sh
 
-g++ -c mainlib.cpp array.cpp -m32 `pkg-config --cflags opencv`
-ghc --make $1 -O -lstdc++ mainlib.o array.o `pkg-config --libs opencv`
+g++ -c mainlib.cpp array.cpp filter.cpp -m32 `pkg-config --cflags opencv`
+ghc --make $1 -O -lstdc++ mainlib.o array.o filter.o  `pkg-config --libs opencv`

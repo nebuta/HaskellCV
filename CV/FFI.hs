@@ -9,6 +9,10 @@ import Foreign.ForeignPtr (ForeignPtr)
 data CMat -- Mat type in C++ OpenCV
 data Mat = Mat !(ForeignPtr CMat)
 
+data CFilterEngine
+data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
+
+
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
 
 -- Matrix basic operations
@@ -46,6 +50,8 @@ foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 -- Filters
 
-foreign import ccall "gaussian" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_gaussian" c_gaussian :: CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_boxFilter" c_boxFilter :: CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
 
+-- foreign import ccall "f_createBoxFilter" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
 
