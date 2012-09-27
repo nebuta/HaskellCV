@@ -87,7 +87,6 @@ generalCFilter f (Mat m) =
 
 dilate :: Mat -> Iso Mat
 dilate kernel mat = generalCFilter2 c_dilate kernel mat
-    
 
 generalCFilter2 :: (Ptr CMat -> Ptr CMat -> IO (Ptr CMat)) -> Mat -> Iso Mat
 generalCFilter2 f (Mat p) (Mat m) =

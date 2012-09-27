@@ -78,7 +78,7 @@ extern "C" {
     }
     
     //Filters that use mask
-    cv::Mat* f_dilate(Mat* mat, Mat* strel){
+    cv::Mat* f_dilate(Mat* strel, Mat* mat){
         Mat* res = new Mat();
         cv::dilate(*mat,*res,*strel);
         return res;
