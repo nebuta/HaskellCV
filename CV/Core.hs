@@ -167,7 +167,7 @@ cvAbs (Mat m) =
       return (Mat mat)
 
 -- |Matrix addition
-(+:+) :: Mat -> Mat -> Mat
+(+:+) :: MatT a -> MatT a -> MatT a
 (Mat a) +:+ (Mat b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
