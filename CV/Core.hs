@@ -1,6 +1,6 @@
 -- Core.hs
 
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, GADTs #-}
 
 module CV.Core where
 
@@ -14,6 +14,29 @@ import Data.ByteString (unpack)
 import Data.String
 
 data Mat = Mat !(ForeignPtr CMat)
+
+
+data Ch1 = Ch1
+data Ch2
+data Ch3
+data Ch4
+
+class Channel a
+instance Channel Ch1
+
+data D8
+data D16
+data D32
+data D64
+data ByteU
+data ByteS
+data ByteF
+
+-- Mat typed
+data MatT a b c where
+  CV_8UC1 :: MatT D8 ByteU Ch1
+  CV_8UC2 :: MatT D8 ByteU Ch2
+  CV_8UC3 :: MatT D8 ByteU Ch3
 
 type Iso a = a -> a
 
@@ -92,9 +115,6 @@ instance Image GrayImage where
   fromImg img = GrayImage (cvtColor rgbToGray (mat img))
 --  pixel :: Pos -> GrayImage -> GrayPixel
 --  pixel pos (GrayImage m) = getAt pos m --stub
-
-data Bits = B32 | B16 | B8
-data Channel = Channel Bits
 
 data RGB = RGB Int Int Int
 
@@ -193,8 +213,8 @@ cvAbs (Mat m) =
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
-monoColor :: Channel -> Int -> Int -> RGB -> Mat
-monoColor c h w (RGB r g b)
+monoColor :: (Channel a) => a -> Int -> Int -> RGB -> Mat
+monoColor _ h w (RGB r g b)
   = unsafePerformIO $ do
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
       mat <- newForeignPtr cmatFree mat_ptr

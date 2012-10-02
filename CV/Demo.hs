@@ -7,7 +7,7 @@ import Data.List (foldl')
 
 demo1 :: IO ()
 demo1 = do
-  let imgs = map (monoColor (Channel B16) 300 300) [yellow,blue,red]
+  let imgs = map (monoColor Ch1 300 300) [yellow,blue,red]
   mapM_ showMat imgs
 
 
