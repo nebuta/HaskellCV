@@ -1,6 +1,6 @@
 -- Core.hs
 
-{-# LANGUAGE ForeignFunctionInterface, GADTs #-}
+{-# LANGUAGE ForeignFunctionInterface, GADTs,DatatypeContexts #-}
 
 module CV.Core where
 
@@ -13,8 +13,12 @@ import CV.FFI
 import Data.ByteString (unpack)
 import Data.String
 
-data Mat = Mat !(ForeignPtr CMat)
 
+data CV_8UC1
+
+-- Use of Phantom type
+data Mat = Mat !(ForeignPtr CMat)
+data MatT a = MatT Mat -- stub
 
 data Ch1 = Ch1
 data Ch2
@@ -24,19 +28,21 @@ data Ch4
 class Channel a
 instance Channel Ch1
 
+class Depth a
 data D8
 data D16
 data D32
 data D64
+instance Depth D8
+instance Depth D16
+instance Depth D32
+instance Depth D64
+
+
+class ByteType a
 data ByteU
 data ByteS
 data ByteF
-
--- Mat typed
-data MatT a b c where
-  CV_8UC1 :: MatT D8 ByteU Ch1
-  CV_8UC2 :: MatT D8 ByteU Ch2
-  CV_8UC3 :: MatT D8 ByteU Ch3
 
 type Iso a = a -> a
 
