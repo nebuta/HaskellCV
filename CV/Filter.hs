@@ -86,7 +86,7 @@ generalCFilter f (Mat m) =
 -- Filters using another Mat
 
 dilate :: Mat -> Iso Mat
-dilate kernel mat = generalCFilter2 c_dilate kernel mat
+dilate kernel = generalCFilter2 c_dilate kernel
 
 erode :: Mat -> Iso Mat
 erode kernel mat = generalCFilter2 c_dilate kernel mat
@@ -102,4 +102,7 @@ generalCFilter2 f (Mat p) (Mat m) =
   
 -- erode
 
+
+invariant :: Iso Mat -> Mat -> Mat
+invariant f mat = CV.Core.compare cmpEqual (f mat) mat
 

@@ -37,6 +37,9 @@ foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> 
 
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_mul" c_mulMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_div" c_divMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_divNum" c_divNum :: Ptr CMat -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_eq" c_eqMat :: Ptr CMat -> Ptr CMat -> IO CInt
 foreign import ccall "m_compare" c_compare :: Ptr CMat -> Ptr CMat -> CInt -> IO (Ptr CMat)
 

@@ -69,7 +69,6 @@ data Value = ValueD1 Double | ValueD3 Double Double Double | ValueI1 Int | Value
 
 type Angle = Double
 
-
 data GImage = GImage Mat  -- "Generic Image"
 
 class Image a where
@@ -161,6 +160,34 @@ cvAbs (Mat m) =
           mat <- newForeignPtr cmatFree mat_ptr
           return (Mat mat)
 
+-- |Matrix element-wise multiplication
+(*:*) :: Mat -> Mat -> Mat
+(Mat a) *:* (Mat b) 
+  = unsafePerformIO $ do
+      withForeignPtr a $ \aa -> do
+        withForeignPtr b $ \bb -> do
+          mat_ptr <- c_mulMat aa bb
+          mat <- newForeignPtr cmatFree mat_ptr
+          return (Mat mat)
+
+-- |Matrix division by a scalar
+(/:) :: (Real a) => Mat -> a -> Mat
+(Mat a) /: denom
+  = unsafePerformIO $ do
+      withForeignPtr a $ \aa -> do
+        mat_ptr <- c_divNum aa (CDouble (realToFrac denom))
+        mat <- newForeignPtr cmatFree mat_ptr
+        return (Mat mat)
+
+-- |Matrix element-wise division
+(/:/) :: Mat -> Mat -> Mat
+(Mat a) /:/ (Mat b) 
+  = unsafePerformIO $ do
+      withForeignPtr a $ \aa -> do
+        withForeignPtr b $ \bb -> do
+          mat_ptr <- c_divMat aa bb
+          mat <- newForeignPtr cmatFree mat_ptr
+          return (Mat mat)
 
 
 -- blend :: Mat -> Mat -> Mat

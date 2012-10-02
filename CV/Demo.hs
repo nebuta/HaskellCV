@@ -29,3 +29,10 @@ demo4 = do
   mapM_ (showImg . flip apply img) [gauss 3, medianFilter 3,medianFilter 5, medianFilter 7,laplacian 3 1 0, bilateral 3 5 5]
   let gray = fromImg img :: GrayImage 
   showImg $ apply (dilate (fromStrEl (Ellipse 15 15))) gray
+
+demo5 = do
+  img <- fmap fromImg $ readImg "test.jpg" :: IO GrayImage
+  let cmp = invariant (dilate disc . gauss 5) (mat img)
+  showImg img
+  showMat (cmp /: 2 *:* (mat img) /: 2)
+    where disc = fromStrEl (Ellipse 5 5)

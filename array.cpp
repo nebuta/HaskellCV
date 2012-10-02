@@ -37,6 +37,25 @@ extern "C" {
         return res;
     }
     
+    Mat* m_mul(Mat* a, Mat* b){
+        Mat mat = a->mul(*b);
+        Mat *res = new Mat(mat);
+        return res;
+    }
+    
+    Mat* m_divNum(Mat* a, double denom){
+        Mat ones = Mat::ones(a->size(),CV_8U);
+        Mat mat = a->mul(ones,1.0/denom);
+        Mat *res = new Mat(mat);
+        return res;
+    }
+    
+    Mat* m_div(Mat* a, Mat *b){
+        Mat *res = new Mat();
+        cv::divide(*a,*b,*res);
+        return res;
+    }
+    
     int m_eq(Mat* a, Mat* b){
         Mat res(a->size(),CV_8UC1);
         compare(*a,*b,res,CMP_NE);
@@ -48,6 +67,10 @@ extern "C" {
         Mat *res = new Mat();
         compare(*a,*b,*res,code);
         return res;
+    }
+    
+    double m_mean(Mat* mat){
+        return cv::mean(*mat)[0];
     }
     
     Mat* addWeighted(Mat* ma, double alpha, Mat* mb, double beta, double gamma) {
