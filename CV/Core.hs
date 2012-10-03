@@ -106,24 +106,6 @@ ci = fromIntegral
 cd :: Double -> CDouble
 cd = realToFrac
 
-class MatArith a b where
-  type MulType a b :: *
-  (*:*) :: MatT a -> MatT b -> MatT (MulType a b)
-  -- |Matrix element-wise multiplication
-  a *:* b = multMat (convertTwo a b)
-  multMat :: (MatT a, MatT b) -> MatT (MulType a b)
-  multMat (MatT a, MatT b)
-     = unsafePerformIO $ do
-      withForeignPtr a $ \aa -> do
-        withForeignPtr b $ \bb -> do
-          mat_ptr <- c_mulMat aa bb
-          mat <- newForeignPtr cmatFree mat_ptr
-          return (MatT mat)
-  convertTwo :: MatT a -> MatT b -> (MatT (MulType a b),MatT (MulType a b))
-
-instance MatArith CV_8UC1 CV_16UC1 where
-  type MulType CV_8UC1 CV_16UC1 = CV_16UC1
-  convertTwo a b = (cvtDepth a, b) :: (MatT CV_16UC1, MatT CV_16UC1)
 
 data CmpFun a = CmpFun CInt | MyCmpFun (PixelT a->PixelT a->Bool)
 
@@ -191,6 +173,14 @@ cvAbs (MatT m) =
           mat <- newForeignPtr cmatFree mat_ptr
           return (MatT mat)
 
+
+-- |Matrix element-wise multiplication
+(*:*) :: MatT a -> MatT b -> MatT (MulType a b)
+a *:* b = unsafePerformIO $ do
+  withForeignPtr a $ \aa -> do
+    withForeignPtr b $ \bb -> do
+      mat_ptr <- c_mulMat aa bb
+      mat <- newForeignPtr cmatFree mat_ptr
 
 -- |Matrix division by a scalar
 (/:) :: (Real a) => MatT b -> a -> MatT b
