@@ -17,51 +17,48 @@ import Data.Maybe (fromMaybe)
 
 data Mat = Mat !(ForeignPtr CMat)
 
-data AnyPixel
-data CV_8UC1
-data CV_8UC2
-data CV_8UC3
-data CV_8UC4
-data CV_16UC1
+
+-- For MatT phantom types
+data AnyDepth
+data U8 
+data S8 
+data U16
+data S16
+data S32
+data F32
+data F64
+
+data AnyChannel
+data C1
+data C2
+data C3
+data C4
+data Ch = Ch Int
+
+data AnyColor
+data RGBColor
+data HSV
+data Gray
+
+newtype CDepth = CDepth {unDepth :: CInt}
+d_u8 = CDepth 0
+d_s8 = CDepth 1
+d_u16 = CDepth 2
+d_s16 = CDepth 3
+d_s32 = CDepth 4
+d_f32 = CDepth 5
+d_f64 = CDepth 6
+
 
 -- Use of Phantom type
-data MatT a = MatT !(ForeignPtr CMat) -- stub
+data MatT a b c = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1 Gray, MatT AnyPixel AnyChannel AnyColor
 data PixelT a = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
 data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | CV_16UC1 | AnyPixel deriving (Eq,Ord)
 
-type GrayImage = MatT CV_8UC1
-
-data Ch1 = Ch1
-data Ch2
-data Ch3
-data Ch4
-
-class Channel a
-instance Channel Ch1
-
-class Depth a
-data D8
-data D16
-data D32
-data D64
-instance Depth D8
-instance Depth D16
-instance Depth D32
-instance Depth D64
-
-
-class ByteType a
-data ByteU
-data ByteS
-data ByteF
+type GrayImage = MatT U8 C1 Gray
 
 type Iso a = a -> a
-
-data Color = RGBColor | Gray | HSV
-
-data Filter a b = Filter (a -> b)
-type IsoFilter a = Filter a a
 
 data Pos3D = Pos3D {
   frame :: Int,
@@ -89,8 +86,6 @@ instance Eq Mat where
           is_eq <- c_eqMat aa bb
           return (is_eq /= ci 0)
 
-data Value = ValueD1 Double | ValueD3 Double Double Double | ValueI1 Int | ValueI3 Int Int Int
-
 type Angle = Double
 
 data RGB = RGB Int Int Int
@@ -116,7 +111,7 @@ cmpLT = CmpFun 3
 cmpLE = CmpFun 4
 cmpNE = CmpFun 5
 
-compare :: CmpFun a -> MatT a -> MatT a -> MatT CV_8UC1
+compare :: CmpFun a -> MatT a b c -> MatT a b c -> MatT U8 C1 Gray
 compare (CmpFun code) (MatT ma) (MatT mb)
   = unsafePerformIO $ do
       withForeignPtr ma $ \mma -> do
@@ -127,7 +122,7 @@ compare (CmpFun code) (MatT ma) (MatT mb)
 
 -- Matrix operations
 
-matType :: MatT a -> MatType
+matType :: MatT a b c -> MatType
 matType (MatT m) = 
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
@@ -145,7 +140,7 @@ fromMatType a = fromMaybe (CMatType (-1)) $ M.lookup a (M.fromList $ map f listM
 
 
 -- |Element-wise absolute value
-cvAbs :: MatT a -> MatT a
+cvAbs :: MatT a b c -> MatT a b c
 cvAbs (MatT m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
@@ -154,7 +149,7 @@ cvAbs (MatT m) =
       return (MatT mat)
 
 -- |Matrix addition
-(+:+) :: MatT a -> MatT a -> MatT a
+(+:+) :: MatT a b c -> MatT a b c -> MatT a b c
 (MatT a) +:+ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -164,7 +159,7 @@ cvAbs (MatT m) =
           return (MatT mat)
           
 -- |Matrix subtraction
-(-:-) :: MatT a -> MatT a -> MatT a
+(-:-) :: MatT a b c -> MatT a b c -> MatT a b c
 (MatT a) -:- (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -174,16 +169,17 @@ cvAbs (MatT m) =
           return (MatT mat)
 
 
--- |Matrix element-wise multiplication
-(*:*) :: MatT a -> MatT b -> MatT (MulType a b)
-a *:* b = unsafePerformIO $ do
+-- |Matrix element-wise multiplication. Currently only the same type
+(*:*) :: MatT a b c -> MatT a b c -> MatT a b c
+(MatT a) *:* (MatT b) = unsafePerformIO $ do
   withForeignPtr a $ \aa -> do
     withForeignPtr b $ \bb -> do
       mat_ptr <- c_mulMat aa bb
       mat <- newForeignPtr cmatFree mat_ptr
+      return (MatT mat)
 
 -- |Matrix division by a scalar
-(/:) :: (Real a) => MatT b -> a -> MatT b
+(/:) :: (Real d) => MatT a b c -> d -> MatT a b c
 (MatT a) /: denom
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -193,7 +189,7 @@ a *:* b = unsafePerformIO $ do
 
 -- |Matrix element-wise division
 -- ToDo: Is this correct? the same type for a return value??
-(/:/) :: MatT a -> MatT a -> MatT a
+(/:/) :: MatT a b c -> MatT a b c -> MatT a b c
 (MatT a) /:/ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -202,41 +198,31 @@ a *:* b = unsafePerformIO $ do
           mat <- newForeignPtr cmatFree mat_ptr
           return (MatT mat)
 
--- Phantom types conversion
-convAny :: MatT a -> MatT b
-convAny (MatT m) = MatT m
+-- Phantom types conversion  Not safe!!!
+forceCast :: MatT a b c -> MatT d e f
+forceCast (MatT m) = MatT m
 
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
-monoColor :: (Channel a) => a -> Int -> Int -> RGB -> MatT b
-monoColor _ h w (RGB r g b)
+monoColor :: Int -> Int -> RGB -> MatT U8 C3 RGBColor
+monoColor h w (RGB r g b)
   = unsafePerformIO $ do
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
       mat <- newForeignPtr cmatFree mat_ptr
       return (MatT mat)
 
-showMatT :: MatT a -> IO ()
+showMatT :: MatT a b c -> IO ()
 showMatT (MatT m) = do
   withForeignPtr m $ \mm -> do
     c_showMat mm
-
-showMat :: Mat -> IO ()
-showMat (Mat m) = do
-  withForeignPtr m $ \mm -> do
-    c_showMat mm
-
-matToMatT :: Mat -> MatT a
-matToMatT (Mat a) = MatT a
-
--- Color conversion
 
 -- addWeighted :: Mat -> Double -> Mat -> Double -> Double -> Mat
 -- addWeighted (Mat ma) alpha (Mat mb) beta gamma = fromId $ c_addWeighted (ci ma) (cd alpha) (ci mb) (cd beta) (cd gamma)
 
 -- Image operations
 
-readImg :: FilePath -> IO (MatT AnyPixel)
+readImg :: FilePath -> IO (MatT AnyDepth AnyChannel AnyColor)
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
@@ -250,47 +236,50 @@ newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
 -- data ConvertCode = ConvertCode CInt
 rgbToGray = ConvertCode (ci 7)
 
-class CvtDepth from to where
-  cvtDepth :: from -> to
-
-instance CvtDepth (MatT CV_8UC3) (MatT CV_8UC1) where
-  cvtDepth mat = cvtDepth' CV_8UC1 mat
-
-instance CvtDepth (MatT CV_8UC1) (MatT CV_16UC1) where
-  cvtDepth mat = cvtDepth' CV_16UC1 mat
-
-cvtDepth' :: MatType -> MatT a -> MatT b
-cvtDepth' t (MatT m) = unsafePerformIO $ do
+cvtDepth' :: CDepth -> MatT a b c -> MatT d b c
+cvtDepth' depth (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
-    mat_ptr <- c_convertTo (unCMatType $ fromMatType t) mm
+    mat_ptr <- m_changeDepth (unDepth depth) mm
     mat <- newForeignPtr cmatFree mat_ptr 
     return $ MatT mat
 
-cvtColor :: ConvertCode -> MatT a -> MatT b
-cvtColor (ConvertCode code) (MatT m)
+cvtColor' :: ConvertCode -> MatT a b c -> MatT a d e
+cvtColor' (ConvertCode code) (MatT m)
   = unsafePerformIO $ do
       withForeignPtr m $ \mm -> do
         mat_ptr <- c_cvtColor code mm
         mat <- newForeignPtr cmatFree mat_ptr
         return (MatT mat)
 
-class Gray a
-instance Gray CV_8UC1
+-- conversion of depth
+class CvtDepth from to where
+  cvtDepth :: MatT from a b -> MatT to a b
 
-class ToGray a b where
-  toGray :: (Gray b) => MatT a -> MatT b
+-- conversion of channels, keep depth (a)
+class CvtColor from to where
+  cvtColor :: MatT a from b -> MatT a to c
 
-instance ToGray CV_8UC3 CV_8UC1 where
-  toGray mat = cvtColor rgbToGray mat
+-- Conversion between any compatible mat's. Two can have different depths and channels.
+class (CvtDepth a d, CvtColor b e) => Convert a b c d e f where
+  convert :: MatT a b c -> MatT d e f
+  convert = cvtColor . cvtDepth
 
-instance ToGray AnyPixel CV_8UC1 where
-  toGray mat
-    = case matType mat of
-        CV_8UC3 -> cvtColor rgbToGray mat
-        _ -> error "Not supported yet"
+class ConvertAny a b c where
+  convertAny :: MatT AnyDepth AnyChannel AnyColor -> MatT a b c
+
+instance CvtDepth a U8 where
+  cvtDepth = cvtDepth' d_u8
+
+instance CvtDepth a U16 where
+  cvtDepth mat = cvtDepth' d_u16 mat
+
+instance CvtColor AnyChannel C1 where
+  cvtColor = cvtColor' rgbToGray
+
+instance Convert AnyDepth AnyChannel AnyColor U8 C1 Gray
 
 {-
-pixelAt  :: Int -> Int -> MatT a -> PixelT a
+pixelAt  :: Int -> Int -> MatT a b c-> PixelT a b c
 pixelAt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     scalar_ptr <- c_pixelAt (ci y) (ci x) mm

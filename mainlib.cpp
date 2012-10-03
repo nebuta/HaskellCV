@@ -38,6 +38,7 @@ extern "C" {
     }
     
     Mat* monoColor(int h, int w, int r, int g, int b){
+        //Returns CV_8UC3
         Mat_<Vec3b>* mat = new Mat_<Vec3b>(h,w,Vec3b(r,g,b));
         return mat;
     }

@@ -15,7 +15,7 @@ detect img = filterThresAndDist percentileThres distThres $ refinePos $ findInde
     distThres = 4
     dilated = dilate (fromStrEl (Ellipse 3 3)) img
 
-findIndexMat :: CmpFun a -> MatT a -> MatT a -> [Coord]
+findIndexMat :: CmpFun a -> MatT a b c -> MatT a b c-> [Coord]
 findIndexMat _ _ _ = []   -- Stub!!
 
 refinePos :: [Coord] -> [Pos]
@@ -46,7 +46,7 @@ main = demos
 maintrue :: IO ()
 maintrue = do
   img <- readImg "cell.jpg"
-  let ps = findParticles (toGray img)
+  let ps = findParticles (convert img)
   return ()
 
 demos :: IO ()

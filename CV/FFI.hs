@@ -52,7 +52,7 @@ foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat)
 -- image operations
 foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
 foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "m_convertTo" c_convertTo :: CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_changeDepth" m_changeDepth :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 -- Filters
 

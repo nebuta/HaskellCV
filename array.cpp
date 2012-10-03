@@ -22,8 +22,9 @@ extern "C" {
     int m_type(Mat* mat){
         return mat->type();
     }
-    
-    Mat* m_convertTo(int type, Mat* mat){
+    //change depth with the same size and channels
+    Mat* m_changeDepth(int depth, Mat* mat){
+        int type = mat->type() + depth - mat->depth();
         Mat *res = new Mat();
         mat->convertTo(*res, type);
         return res;
