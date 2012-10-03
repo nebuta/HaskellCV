@@ -7,6 +7,7 @@ import Foreign.Ptr
 import Foreign.ForeignPtr (ForeignPtr)
 
 data CMat -- Mat type in C++ OpenCV
+data CScalar -- Scalar type in C++ OpenCV
 
 data CFilterEngine
 data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
@@ -35,6 +36,8 @@ foreign import ccall "randMat" c_randMat :: CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
 
+-- foreign import ccall "m_pixelAt" c_pixelAt :: CInt -> CInt -> Ptr CMat -> IO (Ptr CScalar)
+foreign import ccall "m_type" c_type :: Ptr CMat -> IO CInt
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_mul" c_mulMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
@@ -49,6 +52,7 @@ foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat)
 -- image operations
 foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
 foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_convertTo" c_convertTo :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 -- Filters
 

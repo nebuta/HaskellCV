@@ -6,16 +6,16 @@ import CV.Demo
 
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
-  where prefilter = apply (gauss 3)
+  where prefilter = gauss 3
 
 detect :: GrayImage -> [Pos]
-detect img = filterThresAndDist percentileThres distThres $ refinePos $ findIndexMat cmpEqual (mat img) dilated
+detect img = filterThresAndDist percentileThres distThres $ refinePos $ findIndexMat cmpEqual img dilated
   where
     percentileThres = 10    -- in %
     distThres = 4
-    dilated = dilate (fromStrEl (Ellipse 3 3)) (mat img)
+    dilated = dilate (fromStrEl (Ellipse 3 3)) img
 
-findIndexMat :: CmpFun -> Mat -> Mat -> [Coord]
+findIndexMat :: CmpFun a -> MatT a -> MatT a -> [Coord]
 findIndexMat _ _ _ = []   -- Stub!!
 
 refinePos :: [Coord] -> [Pos]
@@ -46,7 +46,7 @@ main = demos
 maintrue :: IO ()
 maintrue = do
   img <- readImg "cell.jpg"
-  let ps = findParticles (fromImg img)
+  let ps = findParticles (toGray img)
   return ()
 
 demos :: IO ()

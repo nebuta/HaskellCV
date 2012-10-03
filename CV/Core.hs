@@ -1,6 +1,6 @@
 -- Core.hs
 
-{-# LANGUAGE ForeignFunctionInterface, GADTs,DatatypeContexts #-}
+{-# LANGUAGE ForeignFunctionInterface, GADTs, MultiParamTypeClasses, FlexibleInstances, TypeFamilies #-}
 
 module CV.Core where
 
@@ -12,13 +12,25 @@ import System.IO.Unsafe (unsafePerformIO)
 import CV.FFI
 import Data.ByteString (unpack)
 import Data.String
+import qualified Data.Map as M (lookup,fromList)
+import Data.Maybe (fromMaybe)
 
+data Mat = Mat !(ForeignPtr CMat)
 
+data AnyPixel
 data CV_8UC1
+data CV_8UC2
+data CV_8UC3
+data CV_8UC4
+data CV_16UC1
 
 -- Use of Phantom type
-data Mat = Mat !(ForeignPtr CMat)
-data MatT a = MatT Mat -- stub
+data MatT a = MatT !(ForeignPtr CMat) -- stub
+data PixelT a = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
+newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
+data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | AnyPixel deriving (Eq,Ord)
+
+type GrayImage = MatT CV_8UC1
 
 data Ch1 = Ch1
 data Ch2
@@ -47,19 +59,6 @@ data ByteF
 type Iso a = a -> a
 
 data Color = RGBColor | Gray | HSV
-
-{-
-data Mat1D = Mat1D Ptr Color Int
-data Mat2D = Mat2D Ptr Color Int Int -- width, height
-data Mat3D = Mat3D Ptr Color Int Int Int
--}
-
-
-
-apply :: Image a => Iso Mat -> a -> a
-apply f img = fromMat $ f (mat img)
-
-
 
 data Filter a b = Filter (a -> b)
 type IsoFilter a = Filter a a
@@ -90,40 +89,11 @@ instance Eq Mat where
           is_eq <- c_eqMat aa bb
           return (is_eq /= ci 0)
 
-data GrayImage = GrayImage Mat
-
-data Pixel = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
-
 data Value = ValueD1 Double | ValueD3 Double Double Double | ValueI1 Int | ValueI3 Int Int Int
 
 type Angle = Double
 
-data GImage = GImage Mat  -- "Generic Image"
-
-class Image a where
-  mat :: a -> Mat
-  fromMat :: Mat -> a
-  pixel :: Pos -> a -> Pixel
-  width :: a -> Int
-  height :: a -> Int
-  dim :: a -> (Int,Int)
-  dim img = (width img,height img)
-  fromImg :: (Image b) => b -> a 
-  fromImg img = fromMat (mat img) -- default. Convert mat data if necessary.
-
-instance Image GImage where
-  mat (GImage m) = m
-  fromMat m = GImage m
-
-instance Image GrayImage where
-  mat (GrayImage m) = m
-  fromMat m = GrayImage m
-  fromImg img = GrayImage (cvtColor rgbToGray (mat img))
---  pixel :: Pos -> GrayImage -> GrayPixel
---  pixel pos (GrayImage m) = getAt pos m --stub
-
 data RGB = RGB Int Int Int
-
 yellow, red, blue, green :: RGB
 yellow = RGB 255 255 0
 red = RGB 255 0 0
@@ -136,8 +106,34 @@ ci = fromIntegral
 cd :: Double -> CDouble
 cd = realToFrac
 
+class MatArith a b where
+  type MulType a b
+  (*:*) :: MatT a -> MatT b -> MatT (MulType a b)
+  -- |Matrix element-wise multiplication
+  (MatT a) *:* (MatT b) 
+     = unsafePerformIO $ do
+      withForeignPtr a $ \aa -> do
+        withForeignPtr b $ \bb -> do
+          mat_ptr <- c_mulMat aa bb
+          mat <- newForeignPtr cmatFree mat_ptr
+          return (MatT mat)
 
-data CmpFun = CmpFun CInt | MyCmpFun (Pixel->Pixel->Bool)
+instance MatArith CV_8UC1 AnyPixel where
+  type MulType CV_8UC1 AnyPixel = AnyPixel
+
+instance MatArith CV_8UC2 AnyPixel where
+  type MulType CV_8UC2 AnyPixel = AnyPixel
+
+instance MatArith CV_8UC3 AnyPixel where
+  type MulType CV_8UC3 AnyPixel = AnyPixel
+
+instance MatArith CV_8UC4 AnyPixel where
+  type MulType CV_8UC4 AnyPixel = AnyPixel
+
+instance MatArith CV_16UC1 AnyPixel where
+  type MulType CV_16UC1 AnyPixel = AnyPixel
+
+data CmpFun a = CmpFun CInt | MyCmpFun (PixelT a->PixelT a->Bool)
 
 cmpEqual = CmpFun 0
 cmpGT = CmpFun 1
@@ -146,155 +142,175 @@ cmpLT = CmpFun 3
 cmpLE = CmpFun 4
 cmpNE = CmpFun 5
 
-compare :: CmpFun -> Mat -> Mat -> Mat
-compare (CmpFun code) (Mat ma) (Mat mb)
+compare :: CmpFun a -> MatT a -> MatT a -> MatT CV_8UC1
+compare (CmpFun code) (MatT ma) (MatT mb)
   = unsafePerformIO $ do
       withForeignPtr ma $ \mma -> do
         withForeignPtr mb $ \mmb -> do
           mat_ptr <- c_compare mma mmb code
           mat <- newForeignPtr cmatFree mat_ptr
-          return (Mat mat)
+          return (MatT mat)
 
 -- Matrix operations
 
+matType :: MatT a -> MatType
+matType (MatT m) = 
+  unsafePerformIO $ do
+    withForeignPtr m $ \mm -> do
+      t <- c_type mm
+      return (fromCMatType (CMatType t))
+
+fromCMatType :: CMatType -> MatType
+fromCMatType a = fromMaybe AnyPixel $ M.lookup a (M.fromList listMatType)
+
+listMatType = [(CMatType 0,CV_8UC1)]
+
+fromMatType :: MatType -> CMatType
+fromMatType a = fromMaybe (CMatType (-1)) $ M.lookup a (M.fromList $ map f listMatType)
+  where f (f,s) = (s,f)
+
+
 -- |Element-wise absolute value
-cvAbs :: Mat -> Mat
-cvAbs (Mat m) =
+cvAbs :: MatT a -> MatT a
+cvAbs (MatT m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       mat_ptr <- c_abs mm
       mat <- newForeignPtr cmatFree mat_ptr
-      return (Mat mat)
+      return (MatT mat)
 
 -- |Matrix addition
 (+:+) :: MatT a -> MatT a -> MatT a
-(Mat a) +:+ (Mat b) 
+(MatT a) +:+ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_addMat aa bb
           mat <- newForeignPtr cmatFree mat_ptr
-          return (Mat mat)
+          return (MatT mat)
           
 -- |Matrix subtraction
-(-:-) :: Mat -> Mat -> Mat
-(Mat a) -:- (Mat b) 
+(-:-) :: MatT a -> MatT a -> MatT a
+(MatT a) -:- (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_subMat aa bb
           mat <- newForeignPtr cmatFree mat_ptr
-          return (Mat mat)
+          return (MatT mat)
 
--- |Matrix element-wise multiplication
-(*:*) :: Mat -> Mat -> Mat
-(Mat a) *:* (Mat b) 
-  = unsafePerformIO $ do
-      withForeignPtr a $ \aa -> do
-        withForeignPtr b $ \bb -> do
-          mat_ptr <- c_mulMat aa bb
-          mat <- newForeignPtr cmatFree mat_ptr
-          return (Mat mat)
 
 -- |Matrix division by a scalar
-(/:) :: (Real a) => Mat -> a -> Mat
-(Mat a) /: denom
+(/:) :: (Real a) => MatT b -> a -> MatT b
+(MatT a) /: denom
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
         mat_ptr <- c_divNum aa (CDouble (realToFrac denom))
         mat <- newForeignPtr cmatFree mat_ptr
-        return (Mat mat)
+        return (MatT mat)
 
 -- |Matrix element-wise division
-(/:/) :: Mat -> Mat -> Mat
-(Mat a) /:/ (Mat b) 
+-- ToDo: Is this correct? the same type for a return value??
+(/:/) :: MatT a -> MatT a -> MatT a
+(MatT a) /:/ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_divMat aa bb
           mat <- newForeignPtr cmatFree mat_ptr
-          return (Mat mat)
+          return (MatT mat)
 
+-- Phantom types conversion
+convAny :: MatT a -> MatT b
+convAny (MatT m) = MatT m
 
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
-monoColor :: (Channel a) => a -> Int -> Int -> RGB -> Mat
+monoColor :: (Channel a) => a -> Int -> Int -> RGB -> MatT b
 monoColor _ h w (RGB r g b)
   = unsafePerformIO $ do
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
       mat <- newForeignPtr cmatFree mat_ptr
-      return (Mat mat)
+      return (MatT mat)
+
+showMatT :: MatT a -> IO ()
+showMatT (MatT m) = do
+  withForeignPtr m $ \mm -> do
+    c_showMat mm
 
 showMat :: Mat -> IO ()
 showMat (Mat m) = do
   withForeignPtr m $ \mm -> do
     c_showMat mm
 
-showImg :: (Image a) => a -> IO ()
-showImg = showMat . mat
-
-{-
-matsize :: Mat -> Int
-matsize (Mat id) = fromIntegral (c_length (fromIntegral id))
-
-
--- Random Matrix with a specified size
-randMat :: Int -> Int -> Mat
-randMat y x = fromId (c_randMat (fromIntegral y) (fromIntegral x))
-
--- 1D vector with 0 norm
-zeros :: Int -> Mat
-zeros n = fromId (c_zeros (fromIntegral n))
-
-{-
-vals :: Mat -> [Int]
-vals (Mat id) = map (fromIntegral . c_valAt (fromIntegral id)) (map fromIntegral [0..len-1])
-  where
-    len :: Int
-    len = fromIntegral (c_length (fromIntegral id))
--}
-
--- 2D Filters
---
-
-
-
-
+matToMatT :: Mat -> MatT a
+matToMatT (Mat a) = MatT a
 
 -- Color conversion
-newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
 
-rgbToGray = ConvertCode (ci 7)
-
-addWeighted :: Mat -> Double -> Mat -> Double -> Double -> Mat
-addWeighted (Mat ma) alpha (Mat mb) beta gamma = fromId $ c_addWeighted (ci ma) (cd alpha) (ci mb) (cd beta) (cd gamma)
-
-
--}
-
+-- addWeighted :: Mat -> Double -> Mat -> Double -> Double -> Mat
+-- addWeighted (Mat ma) alpha (Mat mb) beta gamma = fromId $ c_addWeighted (ci ma) (cd alpha) (ci mb) (cd beta) (cd gamma)
 
 -- Image operations
 
-readImg :: FilePath -> IO GImage
+readImg :: FilePath -> IO (MatT AnyPixel)
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
     mat <- newForeignPtr cmatFree mat_ptr 
-    return $ GImage (Mat mat)
+    return $ MatT mat
 
 -- Image color conversion
 --
 
-data ConvertCode = ConvertCode CInt
+newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
+-- data ConvertCode = ConvertCode CInt
 rgbToGray = ConvertCode (ci 7)
 
+class CvtDepth from to where
+  cvtDepth :: from -> to
 
-cvtColor :: ConvertCode -> Mat -> Mat
-cvtColor (ConvertCode code) (Mat m)
+instance CvtDepth (MatT CV_8UC3) (MatT CV_8UC1) where
+  cvtDepth mat = cvtDepth' CV_8UC1 mat
+
+cvtDepth' :: MatType -> MatT a -> MatT b
+cvtDepth' t (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    mat_ptr <- c_convertTo (unCMatType $ fromMatType t) mm
+    mat <- newForeignPtr cmatFree mat_ptr 
+    return $ MatT mat
+
+cvtColor :: ConvertCode -> MatT a -> MatT b
+cvtColor (ConvertCode code) (MatT m)
   = unsafePerformIO $ do
       withForeignPtr m $ \mm -> do
         mat_ptr <- c_cvtColor code mm
         mat <- newForeignPtr cmatFree mat_ptr
-        return (Mat mat)
+        return (MatT mat)
+
+class Gray a
+instance Gray CV_8UC1
+
+class ToGray a b where
+  toGray :: (Gray b) => MatT a -> MatT b
+
+instance ToGray CV_8UC3 CV_8UC1 where
+  toGray mat = cvtColor rgbToGray mat
+
+instance ToGray AnyPixel CV_8UC1 where
+  toGray mat
+    = case matType mat of
+        CV_8UC3 -> cvtColor rgbToGray mat
+        _ -> error "Not supported yet"
+
+{-
+pixelAt  :: Int -> Int -> MatT a -> PixelT a
+pixelAt y x (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    scalar_ptr <- c_pixelAt (ci y) (ci x) mm
+    mat <- newForeignPtr cmatFree mat_ptr
+    return (Mat mat)
+
+-}
 

@@ -11,12 +11,12 @@ import Foreign.Marshal.Alloc (finalizerFree)
 import System.IO.Unsafe (unsafePerformIO)
 
 data StrEl = Rect Int Int | Ellipse Int Int | Cross Int Int
-fromStrEl :: StrEl -> Mat
+fromStrEl :: StrEl -> MatT a
 fromStrEl el =
   unsafePerformIO $ do
     mat_ptr <- c_getStructuringElement (t el) (ww el) (hh el)
     mat <- newForeignPtr cmatFree mat_ptr
-    return (Mat mat)
+    return (MatT mat)
   where     -- ToDo: too long and ugly, think about redesigning
     t (Rect _ _) = strelRect
     t (Ellipse _ _) = strelEllipse
@@ -40,69 +40,63 @@ strelEllipse = 2
 -- ToDo: Use Maybe for results? (in case of exception raised)
 
 -- Default for gaussian
-gauss :: Double -> Iso Mat
+gauss :: Double -> Iso (MatT a)
 gauss sigma = gaussian 0 0 sigma 0
 
 -- Full feature gaussian
 -- gaussian :: Int -> Int -> Double -> Double -> Iso Mat
 -- gaussian kw kh sx sy = generalCFilter (c_gaussian (ci kw) (ci kh) (cd sx) (cd sy))
 
-gaussian :: Int -> Int -> Double -> Double -> Iso Mat
-gaussian kw kh sx sy (Mat m) =
-  unsafePerformIO $ do
-    withForeignPtr m $ \mm -> do
-      mat_ptr <- (c_gaussian (ci kw) (ci kh) (cd sx) (cd sy)) mm
-      mat <- newForeignPtr cmatFree mat_ptr
-      return (Mat mat)
+gaussian :: Int -> Int -> Double -> Double -> Iso (MatT a)
+gaussian kw kh sx sy = generalCFilter (c_gaussian (ci kw) (ci kh) (cd sx) (cd sy))
 
-boxFilter :: Int -> Int -> Iso Mat
+boxFilter :: Int -> Int -> Iso (MatT a)
 boxFilter kx ky = generalCFilter (c_boxFilter (ci kx) (ci ky))
 
-
 -- ToDo: still has a bug? Check params before passing to OpenCV
-derivFilter :: Int -> Int -> Int -> Iso Mat
+derivFilter :: Int -> Int -> Int -> Iso (MatT a)
 derivFilter dx dy ksize = generalCFilter (c_derivFilter (ci dx) (ci dy) (ci ksize))
 
-medianFilter :: Int -> Iso Mat
+medianFilter :: Int -> Iso (MatT a)
 medianFilter ksize = generalCFilter (c_medianFilter (ci ksize))
 
-laplacian :: Int -> Double -> Double -> Iso Mat
+laplacian :: Int -> Double -> Double -> Iso (MatT a)
 laplacian ksize scale delta = generalCFilter (c_laplacian (ci ksize) (cd scale) (cd delta))
 
-bilateral :: Int -> Double -> Double -> Iso Mat
+bilateral :: Int -> Double -> Double -> Iso (MatT a)
 bilateral d sigmaColor sigmaSpace = generalCFilter (c_bilateral (ci d) (cd sigmaColor) (cd sigmaSpace))
 
-sobel :: Int -> Int -> Int -> Double -> Double -> Iso Mat
+sobel :: Int -> Int -> Int -> Double -> Double -> Iso (MatT a)
 sobel dx dy ksize scale delta = generalCFilter (c_sobel (ci dx) (ci dy) (ci ksize) (cd scale) (cd delta))
 
-generalCFilter :: (Ptr CMat -> IO (Ptr CMat)) -> Iso Mat
-generalCFilter f (Mat m) =
+generalCFilter :: (Ptr CMat -> IO (Ptr CMat)) -> Iso (MatT a)
+generalCFilter f (MatT m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       mat_ptr <- f mm
       mat <- newForeignPtr cmatFree mat_ptr
-      return (Mat mat)
+      return (MatT mat)
 
 -- Filters using another Mat
 
-dilate :: Mat -> Iso Mat
+dilate :: MatT a -> Iso (MatT b)
 dilate kernel = generalCFilter2 c_dilate kernel
 
-erode :: Mat -> Iso Mat
+erode :: MatT a -> Iso (MatT b)
 erode kernel mat = generalCFilter2 c_dilate kernel mat
 
-generalCFilter2 :: (Ptr CMat -> Ptr CMat -> IO (Ptr CMat)) -> Mat -> Iso Mat
-generalCFilter2 f (Mat p) (Mat m) =
+generalCFilter2 :: (Ptr CMat -> Ptr CMat -> IO (Ptr CMat)) -> MatT a -> Iso (MatT b)
+generalCFilter2 f (MatT p) (MatT m) =
   unsafePerformIO $ do
     withForeignPtr p $ \pp -> do
       withForeignPtr m $ \mm -> do
         mat_ptr <- f pp mm
         mat <- newForeignPtr cmatFree mat_ptr
-        return (Mat mat)
+        return (MatT mat)
   
 -- erode
 
 
-invariant :: Iso Mat -> Mat -> Mat
+invariant :: Iso (MatT a) -> MatT a -> MatT CV_8UC1
 invariant f mat = CV.Core.compare cmpEqual (f mat) mat
 

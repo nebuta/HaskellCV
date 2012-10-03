@@ -19,6 +19,16 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
+    int m_type(Mat* mat){
+        return mat->type();
+    }
+    
+    Mat* m_convertTo(int type, Mat* mat){
+        Mat *res = new Mat();
+        mat->convertTo(*res, type);
+        return res;
+    }
+    
     Mat* m_abs(Mat* mat) {
         Mat m = cv::abs(*mat);
         Mat *res = new Mat(m);
