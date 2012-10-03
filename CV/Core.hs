@@ -28,7 +28,7 @@ data CV_16UC1
 data MatT a = MatT !(ForeignPtr CMat) -- stub
 data PixelT a = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
-data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | AnyPixel deriving (Eq,Ord)
+data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | CV_16UC1 | AnyPixel deriving (Eq,Ord)
 
 type GrayImage = MatT CV_8UC1
 
@@ -107,31 +107,23 @@ cd :: Double -> CDouble
 cd = realToFrac
 
 class MatArith a b where
-  type MulType a b
+  type MulType a b :: *
   (*:*) :: MatT a -> MatT b -> MatT (MulType a b)
   -- |Matrix element-wise multiplication
-  (MatT a) *:* (MatT b) 
+  a *:* b = multMat (convertTwo a b)
+  multMat :: (MatT a, MatT b) -> MatT (MulType a b)
+  multMat (MatT a, MatT b)
      = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
         withForeignPtr b $ \bb -> do
           mat_ptr <- c_mulMat aa bb
           mat <- newForeignPtr cmatFree mat_ptr
           return (MatT mat)
+  convertTwo :: MatT a -> MatT b -> (MatT (MulType a b),MatT (MulType a b))
 
-instance MatArith CV_8UC1 AnyPixel where
-  type MulType CV_8UC1 AnyPixel = AnyPixel
-
-instance MatArith CV_8UC2 AnyPixel where
-  type MulType CV_8UC2 AnyPixel = AnyPixel
-
-instance MatArith CV_8UC3 AnyPixel where
-  type MulType CV_8UC3 AnyPixel = AnyPixel
-
-instance MatArith CV_8UC4 AnyPixel where
-  type MulType CV_8UC4 AnyPixel = AnyPixel
-
-instance MatArith CV_16UC1 AnyPixel where
-  type MulType CV_16UC1 AnyPixel = AnyPixel
+instance MatArith CV_8UC1 CV_16UC1 where
+  type MulType CV_8UC1 CV_16UC1 = CV_16UC1
+  convertTwo a b = (cvtDepth a, b) :: (MatT CV_16UC1, MatT CV_16UC1)
 
 data CmpFun a = CmpFun CInt | MyCmpFun (PixelT a->PixelT a->Bool)
 
@@ -273,6 +265,9 @@ class CvtDepth from to where
 
 instance CvtDepth (MatT CV_8UC3) (MatT CV_8UC1) where
   cvtDepth mat = cvtDepth' CV_8UC1 mat
+
+instance CvtDepth (MatT CV_8UC1) (MatT CV_16UC1) where
+  cvtDepth mat = cvtDepth' CV_16UC1 mat
 
 cvtDepth' :: MatType -> MatT a -> MatT b
 cvtDepth' t (MatT m) = unsafePerformIO $ do
