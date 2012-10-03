@@ -30,6 +30,10 @@ extern "C" {
         return res;
     }
     
+    int m_pixelIntAt(int y, int x, Mat* mat){
+        return mat->at<int>(y,x);
+    }
+    
     Mat* m_abs(Mat* mat) {
         Mat m = cv::abs(*mat);
         Mat *res = new Mat(m);

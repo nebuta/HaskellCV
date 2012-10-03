@@ -74,15 +74,7 @@ d_f64 = CDepth 6
 
 -- Use of Phantom type
 data MatT a b c = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1 Gray, MatT AnyPixel AnyChannel AnyColor
-
-class IntPixel a
-instance IntPixel U8
-
-class (DepthType a,ChannelType b, ColorType c) => Pixel a b c where 
-  type PixelT a b c
-
-instance Pixel U8 C1 Gray where
-  type PixelT U8 C1 Gray = Int
+data Scalar = Scalar !(ForeignPtr CScalar)
 
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
 data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | CV_16UC1 | AnyPixel deriving (Eq,Ord)
@@ -309,13 +301,18 @@ instance CvtColor AnyChannel C1 where
 
 instance Convert AnyDepth AnyChannel AnyColor U8 C1 Gray
 
-{-
-pixelAt  :: Int -> Int -> MatT a b c-> PixelT a b c
-pixelAt y x (MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    scalar_ptr <- c_pixelAt (ci y) (ci x) mm
-    mat <- newForeignPtr cmatFree mat_ptr
-    return (Mat mat)
 
--}
+class Pixel a b c where
+  type PixelT a b c
+  pixelAt :: Int -> Int -> MatT a b c -> PixelT a b c
+
+instance Pixel U8 C1 Gray where
+  type PixelT U8 C1 Gray = Int
+  pixelAt = pixelIntAt
+
+pixelIntAt  :: Int -> Int -> MatT a b c -> Int
+pixelIntAt y x (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_pixelIntAt (ci y) (ci x) mm
+    return val
 
