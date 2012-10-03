@@ -28,6 +28,16 @@ data S32
 data F32
 data F64
 
+class DepthType a
+instance DepthType AnyDepth
+instance DepthType U8
+instance DepthType S8
+instance DepthType U16
+instance DepthType S16
+instance DepthType S32
+instance DepthType F32
+instance DepthType F64
+
 data AnyChannel
 data C1
 data C2
@@ -35,10 +45,22 @@ data C3
 data C4
 data Ch = Ch Int
 
+class ChannelType a
+instance ChannelType C1
+instance ChannelType C2
+instance ChannelType C3
+instance ChannelType C4
+instance ChannelType Ch
+
 data AnyColor
 data RGBColor
 data HSV
 data Gray
+
+class ColorType a
+instance ColorType RGBColor
+instance ColorType HSV
+instance ColorType Gray
 
 newtype CDepth = CDepth {unDepth :: CInt}
 d_u8 = CDepth 0
@@ -52,7 +74,16 @@ d_f64 = CDepth 6
 
 -- Use of Phantom type
 data MatT a b c = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1 Gray, MatT AnyPixel AnyChannel AnyColor
-data PixelT a = RGBPixel Int Int Int | GrayPixel Int | HSVPixel Int Int Int deriving (Eq, Ord)
+
+class IntPixel a
+instance IntPixel U8
+
+class (DepthType a,ChannelType b, ColorType c) => Pixel a b c where 
+  type PixelT a b c
+
+instance Pixel U8 C1 Gray where
+  type PixelT U8 C1 Gray = Int
+
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
 data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | CV_16UC1 | AnyPixel deriving (Eq,Ord)
 
@@ -102,7 +133,7 @@ cd :: Double -> CDouble
 cd = realToFrac
 
 
-data CmpFun a = CmpFun CInt | MyCmpFun (PixelT a->PixelT a->Bool)
+data CmpFun a = CmpFun CInt | MyCmpFun (a->a->Bool)
 
 cmpEqual = CmpFun 0
 cmpGT = CmpFun 1
