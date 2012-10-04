@@ -131,6 +131,8 @@ ci = fromIntegral
 cd :: Double -> CDouble
 cd = realToFrac
 
+cf :: Double -> CFloat
+cf = realToFrac
 
 data CmpFun a b c = CmpFun CInt | MyCmpFun (PixelType a b c->PixelType a b c->Bool)
 
@@ -178,6 +180,26 @@ numChannels (MatT m) = unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       num <- c_channels mm
       return (fromIntegral num)
+
+-- Histogram functions
+--
+type BinMin = Double
+type BinMax = Double
+type Frequency = Int
+data Histogram = Histogram [(BinMin,BinMax,Frequency)] deriving Show
+
+-- |Calculate histogram.
+-- |Supports only C1 images for now.
+histogram :: Int -> Double -> Double -> MatT a C1 c -> Histogram
+histogram numBin min max (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    int_ptr <- c_hist 0 (ci numBin) (cf min) (cf max) mm
+    vs <- peekArray numBin int_ptr
+    let hist = Histogram (f numBin min max (map fromIntegral vs))
+    return hist
+      where
+        f nb min mx vs = zip3 [min,(min+d)..] [(min+d),(min+d*2)..] vs
+        d = (max-min)/(fromIntegral numBin)
 
 fromCMatType :: CMatType -> MatType
 fromCMatType a = fromMaybe AnyPixel $ M.lookup a (M.fromList listMatType)

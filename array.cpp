@@ -148,6 +148,7 @@ extern "C" {
     }
 
     
+    
     double m_mean(Mat* mat){
         return cv::mean(*mat)[0];
     }
@@ -213,4 +214,24 @@ extern "C" {
             return ps;
         }
     }
+    
+    //For now, only single channel images
+    int* m_hist(int channel, int numBins, float min, float max, Mat* mat){
+
+        int histSize[] = {numBins};
+        float range[] = { min, max };
+        const float* ranges[] = { range };
+        Mat* hist = new Mat();
+        // we compute the histogram from the 0-th and 1-st channels
+        int channels[] = {channel};
+        
+        calcHist( mat, 1, channels, Mat(),
+                 *hist, 1, histSize, ranges,
+                 true, // the histogram is uniform
+                 false );
+        Mat histi;
+        hist->convertTo(histi, CV_32S);
+        return histi.ptr<int>();
+    }
 }
+

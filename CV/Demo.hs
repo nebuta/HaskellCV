@@ -50,3 +50,10 @@ demo7 = do
   return ()
       where disc = fromStrEl (Ellipse 5 5)
 
+demo8 = do
+  img <- fmap convert $ readImg "cell.jpg" :: IO (MatT U8 C1 Gray)
+  let a = histogram 10 0 255 img
+  print a
+  return ()
+      where disc = fromStrEl (Ellipse 5 5)
+

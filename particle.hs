@@ -42,14 +42,14 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = maintrue
+main = demos
 
 maintrue :: IO ()
 maintrue = do
-  img <- readImg "test.jpg"
+  img <- readImg "cell.jpg"
   let ps = findParticles (convert img)
   print (length ps)
 
 demos :: IO ()
 demos = do
-  demo6
+  demo8

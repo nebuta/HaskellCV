@@ -45,6 +45,7 @@ foreign import ccall "m_channels" c_channels :: Ptr CMat -> IO CInt
 foreign import ccall "m_rows" c_rows :: Ptr CMat -> IO CInt
 foreign import ccall "m_cols" c_cols :: Ptr CMat -> IO CInt
 
+foreign import ccall "m_hist" c_hist :: CInt -> CInt -> CFloat -> CFloat -> Ptr CMat -> IO (Ptr CInt) 
 
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
