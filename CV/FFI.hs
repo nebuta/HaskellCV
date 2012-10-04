@@ -41,6 +41,7 @@ foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> 
 foreign import ccall "m_valsUChar" c_valsUChar :: Ptr CMat -> IO (Ptr (Ptr CUChar))
 
 foreign import ccall "m_type" c_type :: Ptr CMat -> IO CInt
+foreign import ccall "m_channels" c_channels :: Ptr CMat -> IO CInt
 foreign import ccall "m_rows" c_rows :: Ptr CMat -> IO CInt
 foreign import ccall "m_cols" c_cols :: Ptr CMat -> IO CInt
 
@@ -51,7 +52,10 @@ foreign import ccall "m_mul" c_mulMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_div" c_divMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_divNum" c_divNum :: Ptr CMat -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_eq" c_eqMat :: Ptr CMat -> Ptr CMat -> IO CInt
+
 foreign import ccall "m_compare" c_compare :: Ptr CMat -> Ptr CMat -> CInt -> IO (Ptr CMat)
+foreign import ccall "m_findNonZero" c_findNonZero :: Ptr CMat -> IO (Ptr CInt)
+
 
 foreign import ccall "addWeighted" c_addWeighted :: Ptr CMat -> CDouble -> Ptr CMat -> CDouble -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat) 

@@ -26,10 +26,15 @@ extern "C" {
     int m_cols(Mat* mat){
         return mat->cols;
     }
-    
+
     int m_type(Mat* mat){
         return mat->type();
     }
+    
+    int m_channels(Mat* mat){
+        return mat->channels();
+    }
+    
     //change depth with the same size and channels
     Mat* m_changeDepth(int depth, Mat* mat){
         int type = mat->type() + depth - mat->depth();
@@ -91,6 +96,57 @@ extern "C" {
         compare(*a,*b,*res,code);
         return res;
     }
+    
+    
+    extern "C++"{
+        template <class T> int* findNonZero(Mat *mat){
+            int *ret;
+            vector<int> ys;
+            vector<int> xs;
+            for(int y=0; y < mat->rows; y++){
+                for(int x=0; x < mat->rows; x++){
+                    if(mat->at<T>(y,x)!=0){
+                        ys.push_back(y);
+                        xs.push_back(x);
+                    }
+                }
+            }
+            int len = ys.size();
+            ret = new int[len*2+1];
+            ret[0] = len;
+            for(int i=0; i<len; i++){
+                ret[i+1] = ys.at(i);
+                ret[i+1+len] = xs.at(i);
+            }
+            return ret;
+        }
+    }
+    
+    //Only supports single channel image for now
+    int* m_findNonZero(Mat *mat) {
+        if (mat->channels() != 1)
+            return NULL;
+        else {
+            switch (mat->depth()){
+                case CV_8U:
+                    return findNonZero<uint8_t>(mat);
+                case CV_8S:
+                    return findNonZero<int8_t>(mat);
+                case CV_16U:
+                    return findNonZero<uint16_t>(mat);
+                case CV_16S:
+                    return findNonZero<int16_t>(mat);
+                case CV_32S:
+                    return findNonZero<int32_t>(mat);
+                case CV_32F:
+                    return findNonZero<float>(mat);
+                case CV_64F:
+                    return findNonZero<double>(mat);
+            }
+            return NULL;
+        }
+    }
+
     
     double m_mean(Mat* mat){
         return cv::mean(*mat)[0];

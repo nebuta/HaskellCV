@@ -15,11 +15,12 @@ detect img = filterThresAndDist percentileThres distThres $ refinePos $ findInde
     distThres = 4
     dilated = dilate (fromStrEl (Ellipse 3 3)) img
 
-findIndexMat :: CmpFun a -> MatT a b c -> MatT a b c-> [Coord]
-findIndexMat _ _ _ = []   -- Stub!!
+findIndexMat :: CmpFun a b c -> MatT a b c -> MatT a b c-> [Coord]
+findIndexMat f a b = findNonZero $ CV.Core.compare f a b
 
 refinePos :: [Coord] -> [Pos]
-refinePos _ = []    --Stub
+refinePos cs = map f cs
+  where f (Coord y x) = Pos (fromIntegral y) (fromIntegral x)--Stub
 
 filterThresAndDist :: Double -> Double -> [Pos] -> [Pos]
 filterThresAndDist thres dist ps = filter (f thres dist ps) ps
@@ -41,13 +42,13 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = demos
+main = maintrue
 
 maintrue :: IO ()
 maintrue = do
-  img <- readImg "cell.jpg"
+  img <- readImg "test.jpg"
   let ps = findParticles (convert img)
-  return ()
+  print (length ps)
 
 demos :: IO ()
 demos = do

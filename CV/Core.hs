@@ -19,11 +19,13 @@ import Data.Maybe (fromMaybe)
 import Foreign.Marshal.Array (peekArray,advancePtr)
 import Foreign.Marshal.Alloc (free)
 import Foreign.C.Types
+import Foreign.Storable (peekElemOff)
 
 data Mat = Mat !(ForeignPtr CMat)
 
 
 -- For MatT phantom types
+-- ToDo: AnyDepth, AnyChannel, AnyColor should only be used for a Mat returned from readImg 
 data AnyDepth
 data U8 
 data S8 
@@ -90,18 +92,18 @@ type Iso a = a -> a
 
 data Pos3D = Pos3D {
   frame :: Int,
-  xx :: Double,
-  yy :: Double
+  yy :: Double,
+  xx :: Double
 }
 
 data Pos = Pos {
-  x :: Double,
-  y :: Double
+  y :: Double,
+  x :: Double
 } deriving Show
 
 data Coord = Coord {
-  xi :: Int,
-  yi :: Int
+  yi :: Int,
+  xi :: Int
 }
 
 instance Eq Mat where
@@ -130,7 +132,7 @@ cd :: Double -> CDouble
 cd = realToFrac
 
 
-data CmpFun a = CmpFun CInt | MyCmpFun (a->a->Bool)
+data CmpFun a b c = CmpFun CInt | MyCmpFun (PixelType a b c->PixelType a b c->Bool)
 
 cmpEqual = CmpFun 0
 cmpGT = CmpFun 1
@@ -139,16 +141,16 @@ cmpLT = CmpFun 3
 cmpLE = CmpFun 4
 cmpNE = CmpFun 5
 
-compare :: CmpFun a -> MatT a b c -> MatT a b c -> MatT U8 C1 Gray
+compare :: CmpFun a b c -> MatT a b c -> MatT a b c -> MatT U8 C1 Gray
 compare (CmpFun code) (MatT ma) (MatT mb)
   = unsafePerformIO $ do
       withForeignPtr ma $ \mma -> do
         withForeignPtr mb $ \mmb -> do
           mat_ptr <- c_compare mma mmb code
           mat <- newForeignPtr cmatFree mat_ptr
-          return (MatT mat)
+          return (MatT mat)  
 
--- Matrix operations
+-- Matrix info
 --
 
 numRows :: MatT a b c -> Int
@@ -170,6 +172,12 @@ matType (MatT m) =
     withForeignPtr m $ \mm -> do
       t <- c_type mm
       return (fromCMatType (CMatType t))
+
+numChannels :: MatT a b c -> Int
+numChannels (MatT m) = unsafePerformIO $ do
+    withForeignPtr m $ \mm -> do
+      num <- c_channels mm
+      return (fromIntegral num)
 
 fromCMatType :: CMatType -> MatType
 fromCMatType a = fromMaybe AnyPixel $ M.lookup a (M.fromList listMatType)
@@ -316,7 +324,10 @@ instance CvtDepth a U16 where
   cvtDepth mat = cvtDepth' d_u16 mat
 
 instance CvtColor AnyChannel C1 where
-  cvtColor = cvtColor' rgbToGray
+  cvtColor mat@(MatT m) = case numChannels mat of
+                3 -> cvtColor' rgbToGray mat   -- Assuming RGB. since AnyChannel is returned only from readImg.
+                1 -> (MatT m) :: MatT a C1 b  --ToDo :: This can be cast to any color, so this is wrong. Channel and color should be merged. Color info inherently contains channel number info.
+                _ -> error "Only C1 or C3 can be converted to C1"
 
 instance Convert AnyDepth AnyChannel AnyColor U8 C1 Gray
 
@@ -324,12 +335,12 @@ class Pixel a b c where
   type PixelType a b c :: *
   pixelAt :: Int -> Int -> MatT a b c -> PixelType a b c
   pixels :: MatT a b c -> [[PixelType a b c]]
+  findPixels :: PixelType a b c -> MatT a b c -> [Coord]
 
 instance Pixel U8 C1 Gray where
   type PixelType U8 C1 Gray = Int
   pixelAt = pixelIntAt
   pixels = pixelsInt
-
 
 --ToDo: check if this is correct.
 pixelsInt :: MatT a C1 c -> [[Int]]   --Single channel
@@ -349,4 +360,14 @@ pixelIntAt y x (MatT m) = unsafePerformIO $ do
     val <- c_pixelIntAt (ci y) (ci x) mm
     return val
 
-
+findNonZero :: MatT a C1 c -> [Coord]
+findNonZero (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    ptr <- c_findNonZero mm
+    len <- fmap fromIntegral $ peekElemOff ptr 0    --ptr[0] holds the # of coord
+    cy <- fmap (map fromIntegral) $ peekArray len (advancePtr ptr 1)
+    cx <- fmap (map fromIntegral) $ peekArray len (advancePtr ptr (len+1))
+    free ptr
+    return (zipWith Coord cy cx)
+    
+  

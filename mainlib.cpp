@@ -48,7 +48,7 @@ extern "C" {
         waitKey();
     }
     
-    //ToDo: This is still a bug: mat is allocated in stack, not heap???
+    //ToDo: Is this way of allocation okay?
     Mat* readImg(char* path){
         string str(path);
         Mat mat = cv::imread(str);
