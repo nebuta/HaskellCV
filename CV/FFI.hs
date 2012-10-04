@@ -38,8 +38,13 @@ foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> 
 
 foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> IO Int
 
+foreign import ccall "m_valsUChar" c_valsUChar :: Ptr CMat -> IO (Ptr (Ptr CUChar))
 
 foreign import ccall "m_type" c_type :: Ptr CMat -> IO CInt
+foreign import ccall "m_rows" c_rows :: Ptr CMat -> IO CInt
+foreign import ccall "m_cols" c_cols :: Ptr CMat -> IO CInt
+
+
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_mul" c_mulMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
@@ -69,8 +74,8 @@ foreign import ccall "f_sobel" c_sobel :: CInt -> CInt -> CInt -> CDouble -> CDo
 
 -- Filters using mask
 foreign import ccall "f_getStructuringElement" c_getStructuringElement :: CInt -> CInt -> CInt -> IO (Ptr CMat)
-foreign import ccall unsafe "f_dilate" c_dilate :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall unsafe "f_erode" c_erode :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_dilate" c_dilate :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_erode" c_erode :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 
 
 -- foreign import ccall "f_createBoxFilter" c_gaussian :: CInt -> CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)

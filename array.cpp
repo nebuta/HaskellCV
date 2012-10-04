@@ -19,6 +19,14 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
+    int m_rows(Mat* mat){
+        return mat->rows;
+    }
+    
+    int m_cols(Mat* mat){
+        return mat->cols;
+    }
+    
     int m_type(Mat* mat){
         return mat->type();
     }
@@ -93,5 +101,60 @@ extern "C" {
         cv::addWeighted(*ma, alpha, *mb, beta, gamma, res);
         Mat *res2 = new Mat(res);
         return res2;
+    }
+    
+    //Continuous uchar
+    uchar* m_valsUCharC(Mat* mat)
+    {
+        if (!mat->isContinuous() || mat->depth() != CV_8U)
+            return NULL;
+        else {
+            return mat->ptr<uchar>(0);
+        }
+    }
+    
+    //Continuous char
+    char* m_valsCharC(Mat* mat)
+    {
+        if (!mat->isContinuous() || mat->depth() != CV_8S)
+            return NULL;
+        else {
+            return mat->ptr<char>(0);
+        }
+    }
+    //NonContinuous uchar (returns array of uchar*, this should be freed by Haskell side)
+    uchar** m_valsUChar(Mat* mat)
+    {
+        if (mat->isContinuous() || mat->depth() != CV_8U)
+            return NULL;
+        else {
+            int channels = mat->channels();
+            int nRows = mat->rows * channels;        
+            uchar** ps = new uchar*[nRows];
+            
+            for( int i = 0; i < nRows; ++i)
+            {
+                ps[i] = mat->ptr<uchar>(i);
+            }
+            return ps;
+        }
+    }
+    
+    //NonContinuous char (returns array of uchar*, this should be freed by Haskell side)
+    char** m_valsChar(Mat* mat)
+    {
+        if (mat->isContinuous() || mat->depth() != CV_8S)
+            return NULL;
+        else {
+            int channels = mat->channels();
+            int nRows = mat->rows * channels;
+            char** ps = new char*[nRows];
+            
+            for( int i = 0; i < nRows; ++i)
+            {
+                ps[i] = mat->ptr<char>(i);
+            }
+            return ps;
+        }
     }
 }

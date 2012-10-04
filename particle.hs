@@ -51,4 +51,4 @@ maintrue = do
 
 demos :: IO ()
 demos = do
-  demo5
+  demo6

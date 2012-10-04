@@ -36,3 +36,10 @@ demo5 = do
   showMatT img
   showMatT (cmp /: 2 *:* img /: 2)
     where disc = fromStrEl (Ellipse 5 5)
+
+demo6 = do
+  img <- fmap convert $ readImg "test.jpg"
+  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
+  print $ sum (map sum (pixels cmp))
+      where disc = fromStrEl (Ellipse 5 5)
+

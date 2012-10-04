@@ -5,6 +5,7 @@
 module CV.Core where
 
 import Foreign.C -- get the C types
+import Foreign.Ptr (Ptr)
 import Foreign.ForeignPtr (ForeignPtr,newForeignPtr)
 import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.Marshal.Alloc (finalizerFree)
@@ -14,6 +15,10 @@ import Data.ByteString (unpack)
 import Data.String
 import qualified Data.Map as M (lookup,fromList)
 import Data.Maybe (fromMaybe)
+
+import Foreign.Marshal.Array (peekArray,advancePtr)
+import Foreign.Marshal.Alloc (free)
+import Foreign.C.Types
 
 data Mat = Mat !(ForeignPtr CMat)
 
@@ -144,6 +149,20 @@ compare (CmpFun code) (MatT ma) (MatT mb)
           return (MatT mat)
 
 -- Matrix operations
+--
+
+numRows :: MatT a b c -> Int
+numRows (MatT m) = unsafePerformIO $ do
+    withForeignPtr m $ \mm -> do
+      t <- c_rows mm
+      return (fromIntegral t)
+
+numCols :: MatT a b c -> Int
+numCols (MatT m) = unsafePerformIO $ do
+    withForeignPtr m $ \mm -> do
+      t <- c_cols mm
+      return (fromIntegral t)
+
 
 matType :: MatT a b c -> MatType
 matType (MatT m) = 
@@ -301,18 +320,33 @@ instance CvtColor AnyChannel C1 where
 
 instance Convert AnyDepth AnyChannel AnyColor U8 C1 Gray
 
-
 class Pixel a b c where
-  type PixelT a b c
-  pixelAt :: Int -> Int -> MatT a b c -> PixelT a b c
+  type PixelType a b c :: *
+  pixelAt :: Int -> Int -> MatT a b c -> PixelType a b c
+  pixels :: MatT a b c -> [[PixelType a b c]]
 
 instance Pixel U8 C1 Gray where
-  type PixelT U8 C1 Gray = Int
+  type PixelType U8 C1 Gray = Int
   pixelAt = pixelIntAt
+  pixels = pixelsInt
+
+
+--ToDo: check if this is correct.
+pixelsInt :: MatT a C1 c -> [[Int]]   --Single channel
+pixelsInt mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsUChar mm
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return (map (map fromIntegral) val)
 
 pixelIntAt  :: Int -> Int -> MatT a b c -> Int
 pixelIntAt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_pixelIntAt (ci y) (ci x) mm
     return val
+
 
