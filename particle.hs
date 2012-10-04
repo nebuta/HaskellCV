@@ -5,16 +5,18 @@ import CV.Filter
 import CV.Demo
 
 import Data.List (sort)
-import Debug.Trace (trace)
+import Debug.Trace (trace,traceShow)
 
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
   where prefilter = gauss 3
 
 detect :: GrayImage -> [Pos]
-detect img = refinePos $ filterThresAndDist minInt minDist img $ findIndexMat cmpEqual img dilated
+detect img = refinePos $ filtered maxima
   where
-    percentile = 10.0   -- in %
+    maxima = findIndexMat cmpEqual img dilated
+    filtered ms = filterThresAndDist minInt minDist img ms
+    percentile = 20.0   -- in %
     minInt = fromIntegral $ intensities !! (floor $ percentile / 100.0 * fromIntegral (length intensities))
     minDist = 1
     dilated = dilate (fromStrEl (Ellipse 3 3)) img
@@ -32,8 +34,9 @@ filterThresAndDist int dist mat ps = filter (\p -> f int mat p && g ps dist p) p
   where
     f :: Double -> MatT U8 C1 Gray -> Coord -> Bool
     f int mat (Coord y x) = (fromIntegral $ pixelAt y x mat) >= int
+--    f _ _ _ = True 
     g :: [Coord] -> Double -> Coord -> Bool
-    g ps dist p = all (\x -> x == 0 || x>d2) $ map (distSq p) ps -- not very clean. Comparison with all non-self is the best way.
+    g ps dist p = all (\x -> x < 0.1 || x>d2) $ map (distSq p) ps -- not very clean. Comparison with all non-self is the best way.
     d2 = dist * dist
     distSq :: Coord -> Coord -> Double
     distSq (Coord y1 x1) (Coord y2 x2) = fromIntegral ( (y1-y2)*(y1-y2) + (x1-x2)*(x1-x2) )
@@ -53,10 +56,10 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = maintrue
+main = mapM_ maintrue [1..100]
 
-maintrue :: IO ()
-maintrue = do
+maintrue :: Int -> IO ()
+maintrue n = do
   img <- readImg "cell.jpg"
   let ps = findParticles (convert img)
   print (length ps)

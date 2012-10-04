@@ -10,7 +10,6 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-
 #include <map>
 
 extern "C" {
@@ -44,7 +43,43 @@ extern "C" {
     }
     
     int m_pixelIntAt(int y, int x, Mat* mat){
-        return mat->at<int>(y,x);
+        int ret;
+        switch (mat->depth()) {
+            case CV_8U:
+                ret = mat->at<uchar>(y,x);
+                break;
+            case CV_16U:
+                ret = mat->at<ushort>(y,x);
+                break;
+            case CV_16S:
+                ret = mat->at<short>(y,x);
+                break;
+            case CV_32S:
+                ret = mat->at<uint32_t>(y,x);
+                break;
+            default:
+                break;
+        }
+   //     printf("#%d %d %d\n",y,x,ret);
+        return ret;
+    }
+    
+    float m_pixelFloatAt(int y, int x, Mat* mat){
+        float ret;
+        if(mat->depth()!=CV_32F)
+            printf("Error: CV_32F required.");
+        ret = mat->at<float>(y,x);
+        //     printf("#%d %d %d\n",y,x,ret);
+        return ret;
+    }
+    
+    double m_pixelDoubleAt(int y, int x, Mat* mat){
+        double ret;
+        if(mat->depth()!=CV_64F)
+            printf("Error: CV_64F required.");
+        ret = mat->at<double>(y,x);
+        //     printf("#%d %d %d\n",y,x,ret);
+        return ret;
     }
     
     Mat* m_abs(Mat* mat) {
@@ -92,8 +127,10 @@ extern "C" {
     }
     
     Mat* m_compare(Mat* a, Mat* b, int code){
+ //                 printf("m_compare() start.\n");
         Mat *res = new Mat();
         compare(*a,*b,*res,code);
+ //                  printf("m_compare() end.%p %p %p\n",a,b,res);
         return res;
     }
     
@@ -114,36 +151,51 @@ extern "C" {
             int len = ys.size();
             ret = new int[len*2+1];
             ret[0] = len;
+            int sum = 0;
             for(int i=0; i<len; i++){
                 ret[i+1] = ys.at(i);
                 ret[i+1+len] = xs.at(i);
+                sum += ret[i+1] + ret[i+1+len];
             }
+  //          printf("%d non-zero elems. sum=%d\n",len,sum);
             return ret;
         }
     }
     
     //Only supports single channel image for now
     int* m_findNonZero(Mat *mat) {
+//          puts("m_findNonZero() start.");
         if (mat->channels() != 1)
             return NULL;
         else {
+            int* ret = NULL;
             switch (mat->depth()){
                 case CV_8U:
-                    return findNonZero<uint8_t>(mat);
+                    ret = findNonZero<uint8_t>(mat);
+                    break;
                 case CV_8S:
-                    return findNonZero<int8_t>(mat);
+                    ret = findNonZero<int8_t>(mat);
+                    break;
                 case CV_16U:
-                    return findNonZero<uint16_t>(mat);
+                    ret = findNonZero<uint16_t>(mat);
+                    break;
                 case CV_16S:
-                    return findNonZero<int16_t>(mat);
+                    ret = findNonZero<int16_t>(mat);
+                    break;
                 case CV_32S:
-                    return findNonZero<int32_t>(mat);
+                    ret = findNonZero<int32_t>(mat);
+                    break;
                 case CV_32F:
-                    return findNonZero<float>(mat);
+                    ret = findNonZero<float>(mat);
+                    break;
                 case CV_64F:
-                    return findNonZero<double>(mat);
+                    ret = findNonZero<double>(mat);
+                    break;
+                default:
+                    ret = NULL;
             }
-            return NULL;
+  //          puts("m_findNonZero() end.");
+            return ret;
         }
     }
 
@@ -182,6 +234,7 @@ extern "C" {
     //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
     uchar** m_valsUChar(Mat* mat)
     {
+ //       puts("m_valsUChar() start.");
         if (mat->depth() != CV_8U)
             return NULL;
         else {
@@ -193,6 +246,7 @@ extern "C" {
             {
                 ps[i] = mat->ptr<uchar>(i);
             }
+ //        puts("m_valsUChar() end.");
             return ps;
         }
     }
@@ -217,7 +271,7 @@ extern "C" {
     
     //For now, only single channel images
     int* m_hist(int channel, int numBins, float min, float max, Mat* mat){
-
+//        puts("m_hist() start.");
         int histSize[] = {numBins};
         float range[] = { min, max };
         const float* ranges[] = { range };
@@ -231,6 +285,7 @@ extern "C" {
                  false );
         Mat histi;
         hist->convertTo(histi, CV_32S);
+ //       puts("m_hist() end.");
         return histi.ptr<int>();
     }
 }

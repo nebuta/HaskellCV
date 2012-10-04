@@ -104,7 +104,16 @@ data Pos = Pos {
 data Coord = Coord {
   yi :: Int,
   xi :: Int
-}
+} deriving (Eq,Show)
+
+class Positional a where
+  dist :: a -> a -> Double
+
+instance Positional Pos where
+  dist (Pos y1 x1) (Pos y2 x2) = (y1-y2)*(y1-y2) + (x1-x2)*(x1-x2)
+
+instance Positional Coord where
+  dist (Coord y1 x1) (Coord y2 x2) = fromIntegral ( (y1-y2)*(y1-y2) + (x1-x2)*(x1-x2) )
 
 instance Eq Mat where
   (Mat a) == (Mat b) = unsafePerformIO $ do
@@ -380,7 +389,7 @@ pixelIntAt  :: Int -> Int -> MatT a b c -> Int
 pixelIntAt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_pixelIntAt (ci y) (ci x) mm
-    return val
+    return (fromIntegral val)
 
 findNonZero :: MatT a C1 c -> [Coord]
 findNonZero (MatT m) = unsafePerformIO $ do

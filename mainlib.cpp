@@ -50,9 +50,11 @@ extern "C" {
     
     //ToDo: Is this way of allocation okay?
     Mat* readImg(char* path){
+//                  puts("readImg() start.");
         string str(path);
         Mat mat = cv::imread(str);
         Mat *res = new Mat(mat);
+//                  puts("readImg() end.");
         return res;
     }
     

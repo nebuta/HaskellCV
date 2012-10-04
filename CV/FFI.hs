@@ -36,7 +36,9 @@ foreign import ccall "randMat" c_randMat :: CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
 
-foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> IO Int
+foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> IO CInt
+foreign import ccall "m_pixelFloatAt" c_pixelFloatAt :: CInt -> CInt -> Ptr CMat -> IO CFloat
+foreign import ccall "m_pixelDoubleAt" c_pixelDoubleAt :: CInt -> CInt -> Ptr CMat -> IO CDouble
 
 foreign import ccall "m_valsUChar" c_valsUChar :: Ptr CMat -> IO (Ptr (Ptr CUChar))
 
