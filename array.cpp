@@ -122,10 +122,10 @@ extern "C" {
             return mat->ptr<char>(0);
         }
     }
-    //NonContinuous uchar (returns array of uchar*, this should be freed by Haskell side)
+    //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
     uchar** m_valsUChar(Mat* mat)
     {
-        if (mat->isContinuous() || mat->depth() != CV_8U)
+        if (mat->depth() != CV_8U)
             return NULL;
         else {
             int channels = mat->channels();
@@ -140,10 +140,10 @@ extern "C" {
         }
     }
     
-    //NonContinuous char (returns array of uchar*, this should be freed by Haskell side)
+    //(possibly noncontinuous) char (returns array of uchar*, this should be freed by Haskell side)
     char** m_valsChar(Mat* mat)
     {
-        if (mat->isContinuous() || mat->depth() != CV_8S)
+        if (mat->depth() != CV_8S)
             return NULL;
         else {
             int channels = mat->channels();

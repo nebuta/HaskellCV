@@ -40,6 +40,13 @@ demo5 = do
 demo6 = do
   img <- fmap convert $ readImg "test.jpg"
   let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
-  print $ sum (map sum (pixels cmp))
+  print (sum (map sum (pixels cmp)))
+      where disc = fromStrEl (Ellipse 5 5)
+
+demo7 = do
+  img <- fmap convert $ readImg "test.jpg"
+  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
+  print (const "hi" (pixels cmp))     --cmp is not calculated because of lazy evaluation.
+  return ()
       where disc = fromStrEl (Ellipse 5 5)
 
