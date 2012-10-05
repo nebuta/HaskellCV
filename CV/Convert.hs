@@ -1,6 +1,13 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 
-module CV.Convert where
+module CV.Convert (
+  bgrToGray
+  , rgbToGray
+  , luvToBGR
+  , cvtDepth
+  , cvtColor
+  , convert
+) where
 
 import CV.Core
 import CV.Types

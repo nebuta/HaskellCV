@@ -174,7 +174,6 @@ extern "C" {
             return valPtr<int32_t>(mat);
     }
     
-    
     float** m_valsF32(Mat* mat)
     {
         if (mat->depth() != CV_32F)

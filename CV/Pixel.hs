@@ -2,6 +2,8 @@
 
 module CV.Pixel where
 
+-- This module should not be used from user.
+
 import CV.Core
 import CV.Types
 import CV.FFI

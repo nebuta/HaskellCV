@@ -81,26 +81,6 @@ numChannels (MatT m) = unsafePerformIO $ do
       num <- c_channels mm
       return (fromIntegral num)
 
--- Histogram functions
---
-type BinMin = Double
-type BinMax = Double
-type Frequency = Int
-data Histogram = Histogram [(BinMin,BinMax,Frequency)] deriving Show
-
--- |Calculate histogram.
--- |Supports only C1 images for now.
-histogram :: Int -> Double -> Double -> MatT a C1 -> Histogram
-histogram numBin min max (MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    int_ptr <- c_hist 0 (ci numBin) (cf min) (cf max) mm
-    vs <- peekArray numBin int_ptr
-    let hist = Histogram (f numBin min max (map fromIntegral vs))
-    return hist
-      where
-        f nb min mx vs = zip3 [min,(min+d)..] [(min+d),(min+d*2)..] vs
-        d = (max-min)/(fromIntegral numBin)
-
 -- |Element-wise absolute value
 cvAbs :: MatT a b -> MatT a b
 cvAbs (MatT m) =
@@ -188,6 +168,29 @@ readImg file = do
     return $ MatT mat
 
 -- Histogram and statistics
+--
+
+-- Histogram functions
+--
+type BinMin = Double
+type BinMax = Double
+type Frequency = Int
+data Histogram = Histogram [(BinMin,BinMax,Frequency)] deriving Show
+
+-- |Calculate histogram.
+-- |Supports only C1 images for now.
+histogram :: Int -> Double -> Double -> MatT a C1 -> Histogram
+histogram numBin min max (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    int_ptr <- c_hist 0 (ci numBin) (cf min) (cf max) mm
+    vs <- peekArray numBin int_ptr
+    let hist = Histogram (f numBin min max (map fromIntegral vs))
+    return hist
+      where
+        f nb min mx vs = zip3 [min,(min+d)..] [(min+d),(min+d*2)..] vs
+        d = (max-min)/(fromIntegral numBin)
+
+
 
 percentileInt :: (DepthInt a) => Double -> MatT a b -> Int
 percentileInt perc (MatT m) = unsafePerformIO $ do
