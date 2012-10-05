@@ -119,7 +119,7 @@ data MatT a b = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1Gray, MatT AnyPix
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
 cv8UC1 = CMatType 0
 
-type GrayImage = MatT U8 C1 Gray
+type GrayImage = MatT U8 C1
 
 type Iso a = a -> a
 
@@ -176,7 +176,7 @@ cd = realToFrac
 cf :: Double -> CFloat
 cf = realToFrac
 
-data CmpFun a b c = CmpFun CInt | MyCmpFun (PixelType a b c->PixelType a b c->Bool)
+data CmpFun a b = CmpFun CInt | MyCmpFun (PixelType a b->PixelType a b->Bool)
 
 cmpEqual = CmpFun 0
 cmpGT = CmpFun 1
@@ -185,7 +185,7 @@ cmpLT = CmpFun 3
 cmpLE = CmpFun 4
 cmpNE = CmpFun 5
 
-compare :: CmpFun a b c -> MatT a b c -> MatT a b c -> MatT U8 C1 Gray
+compare :: CmpFun a b -> MatT a b -> MatT a b -> MatT U8 C1 
 compare (CmpFun code) (MatT ma) (MatT mb)
   = unsafePerformIO $ do
       withForeignPtr ma $ \mma -> do
@@ -197,27 +197,27 @@ compare (CmpFun code) (MatT ma) (MatT mb)
 -- Matrix info
 --
 
-numRows :: MatT a b c -> Int
+numRows :: MatT a b -> Int
 numRows (MatT m) = unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       t <- c_rows mm
       return (fromIntegral t)
 
-numCols :: MatT a b c -> Int
+numCols :: MatT a b -> Int
 numCols (MatT m) = unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       t <- c_cols mm
       return (fromIntegral t)
 
 
-matType :: MatT a b c -> CMatType
+matType :: MatT a b -> CMatType
 matType (MatT m) = 
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       t <- c_type mm
       return (CMatType t)
 
-numChannels :: MatT a b c -> Int
+numChannels :: MatT a b -> Int
 numChannels (MatT m) = unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       num <- c_channels mm
@@ -232,7 +232,7 @@ data Histogram = Histogram [(BinMin,BinMax,Frequency)] deriving Show
 
 -- |Calculate histogram.
 -- |Supports only C1 images for now.
-histogram :: Int -> Double -> Double -> MatT a C1 c -> Histogram
+histogram :: Int -> Double -> Double -> MatT a C1 -> Histogram
 histogram numBin min max (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     int_ptr <- c_hist 0 (ci numBin) (cf min) (cf max) mm
@@ -243,18 +243,8 @@ histogram numBin min max (MatT m) = unsafePerformIO $ do
         f nb min mx vs = zip3 [min,(min+d)..] [(min+d),(min+d*2)..] vs
         d = (max-min)/(fromIntegral numBin)
 
-fromCMatType :: CMatType -> MatType
-fromCMatType a = fromMaybe AnyPixel $ M.lookup a (M.fromList listMatType)
-
-listMatType = [(CMatType 0,CV_8UC1)]
-
-fromMatType :: MatType -> CMatType
-fromMatType a = fromMaybe (CMatType (-1)) $ M.lookup a (M.fromList $ map f listMatType)
-  where f (f,s) = (s,f)
-
-
 -- |Element-wise absolute value
-cvAbs :: MatT a b c -> MatT a b c
+cvAbs :: MatT a b -> MatT a b
 cvAbs (MatT m) =
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
@@ -263,7 +253,7 @@ cvAbs (MatT m) =
       return (MatT mat)
 
 -- |Matrix addition
-(+:+) :: MatT a b c -> MatT a b c -> MatT a b c
+(+:+) :: MatT a b -> MatT a b -> MatT a b
 (MatT a) +:+ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -273,7 +263,7 @@ cvAbs (MatT m) =
           return (MatT mat)
           
 -- |Matrix subtraction
-(-:-) :: MatT a b c -> MatT a b c -> MatT a b c
+(-:-) :: MatT a b -> MatT a b -> MatT a b
 (MatT a) -:- (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -313,7 +303,7 @@ cvAbs (MatT m) =
           return (MatT mat)
 
 -- Phantom types conversion  Not safe!!!
-forceCast :: MatT a b@-> MatT c d
+forceCast :: MatT a b -> MatT c d
 forceCast (MatT m) = MatT m
 
 -- blend :: Mat -> Mat -> Mat
@@ -379,22 +369,22 @@ class (CvtDepth a c, CvtColor b d) => Convert a b c d where
   convert :: MatT a b -> MatT c d
   convert = cvtColor . cvtDepth
 
-class ConvertAny a b c where
-  convertAny :: MatT AnyDepth AnyChannel AnyColor -> MatT a b c
-
 instance CvtDepth a U8 where
   cvtDepth = cvtDepth' d_u8
 
 instance CvtDepth a U16 where
   cvtDepth mat = cvtDepth' d_u16 mat
 
-instance CvtColor AnyChannel C1 where
+instance CvtColor C3BGR C1 where
+  cvtColor = cvtColor' bgrToGray
+
+instance CvtColor a C1 where
   cvtColor mat@(MatT m) = case numChannels mat of
                 3 -> cvtColor' bgrToGray mat   -- Assuming BGR. since AnyChannel is returned only from readImg.
                 1 -> (MatT m) :: MatT a C1 
                 _ -> error "Only C1 or C3 can be converted to C1"
 
-instance Convert AnyDepth AnyChannel U8 C1  -- Just use a default implementation
+instance Convert a b U8 C1  -- Just use a default implementation
 
 class Pixel a b where
   type PixelType a b :: *
@@ -403,8 +393,8 @@ class Pixel a b where
   findPixels :: PixelType a b -> MatT a b -> [Coord]
   percentile :: Double -> MatT a b -> PixelType a b
 
-instance Pixel U8 C1Gray where
-  type PixelType U8 C1Gray = Int
+instance Pixel U8 C1 where
+  type PixelType U8 C1 = Int
   pixelAt = pixelIntAt
   pixels = pixelsInt
   percentile = percentileInt

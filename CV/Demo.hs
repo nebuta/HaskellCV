@@ -32,26 +32,26 @@ demo4 = do
 
 demo5 = do
   img <- fmap convert $ readImg "test.jpg"
-  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
+  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1
   showMatT img
   showMatT (cmp /: 2 *:* img /: 2)
     where disc = fromStrEl (Ellipse 5 5)
 
 demo6 = do
   img <- fmap convert $ readImg "test.jpg"
-  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
+  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1
   print (sum (map sum (pixels cmp)))
       where disc = fromStrEl (Ellipse 5 5)
 
 demo7 = do
   img <- fmap convert $ readImg "test.jpg"
-  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1 Gray
+  let cmp = invariant (dilate disc . gauss 5) img :: MatT U8 C1
   print (const "hi" (pixels cmp))     --cmp is not calculated because of lazy evaluation.
   return ()
       where disc = fromStrEl (Ellipse 5 5)
 
 demo8 = do
-  img <- fmap convert $ readImg "cell.jpg" :: IO (MatT U8 C1 Gray)
+  img <- fmap convert $ readImg "cell.jpg" :: IO (MatT U8 C1)
   let a = histogram 10 0 255 img
   print a
   return ()

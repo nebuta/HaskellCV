@@ -314,5 +314,61 @@ extern "C" {
  //       puts("m_hist() end.");
         return histi.ptr<int>();
     }
+    
+    //Only C1 images
+    int m_percentileInt(double percentile, Mat* mat){
+        //check if this is okay.
+        Mat linear;
+        int ret;
+        if(mat->isContinuous() && mat->channels() == 1 && percentile >= 0 && percentile <= 100){
+            linear = mat->reshape(0,1);
+            Mat sorted;
+            cv::sort(linear,sorted,CV_SORT_DESCENDING);
+            int pos = min<int>(sorted.cols-1,floor(percentile/100*sorted.cols));
+            switch(mat->depth()){
+                case CV_8U:
+                    ret = sorted.at<uint8_t>(pos);
+                    break;
+                case CV_16U:
+                    ret = sorted.at<uint16_t>(pos);
+                    break;
+                case CV_16S:
+                    ret = sorted.at<int16_t>(pos);
+                    break;
+                case CV_32S:
+                    ret = sorted.at<int32_t>(pos);
+                    break;
+            }
+            return ret;
+        }else{
+            // error for now.
+            throw Exception();
+        }
+    }
+    
+    //Only C1 images
+    int m_percentileFloat(double percentile, Mat* mat){
+        //check if this is okay.
+        Mat linear;
+        int ret;
+        if(mat->isContinuous() && mat->channels() == 1 && percentile >= 0 && percentile <= 100){
+            linear = mat->reshape(0,1);
+            Mat sorted;
+            cv::sort(linear,sorted,CV_SORT_DESCENDING);
+            int pos = min<int>(sorted.cols-1,floor(percentile/100*sorted.cols));
+            switch(mat->depth()){
+                case CV_32F:
+                    ret = sorted.at<float>(pos);
+                    break;
+                case CV_64F:
+                    ret = sorted.at<double>(pos);
+                    break;
+            }
+            return ret;
+        }else{
+            // error for now.
+            throw Exception();
+        }
+    }
 }
 
