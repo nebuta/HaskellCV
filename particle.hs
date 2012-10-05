@@ -12,18 +12,17 @@ import Control.Concurrent (forkIO)
 
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
-  where prefilter = gauss 3
+  where prefilter = gauss (fromIntegral minDist)
+
+minDist = 3 :: Int
+
 
 detect :: GrayImage -> [Pos]
-detect img = refinePos $ filtered maxima
+detect img = refinePos $ filterThresAndDist minInt (fromIntegral minDist) img $ findIndexMat cmpEqual img dilated
   where
-    maxima = findIndexMat cmpEqual img dilated
-    filtered ms = filterThresAndDist minInt minDist img ms
     perc = 20.0   -- in %
     minInt = fromIntegral $ percentile perc img
-    minDist = 3
-    dilated = dilate (fromStrEl (Ellipse 3 3)) img
-    intensities = (reverse . sort . concat . pixels) img
+    dilated = dilate (fromStrEl (Ellipse minDist minDist)) img
 
 findIndexMat :: CmpFun a b -> MatT a b -> MatT a b -> [Coord]
 findIndexMat f a b = findNonZero $ CV.compare f a b
@@ -33,14 +32,17 @@ refinePos cs = map f cs
   where f (Coord y x) = Pos (fromIntegral y) (fromIntegral x)--Stub
 
 filterThresAndDist :: Double -> Double -> MatT U8 C1-> [Coord] -> [Coord]
-filterThresAndDist int dist mat ps = filter (\p -> f int mat p && g ps dist p) ps
+filterThresAndDist int dist mat ps = filter (\p@(Coord y x) -> f int mat p && g (map h ps) dist (p,pixelAt y x mat)) ps
   where
     f :: Double -> MatT U8 C1-> Coord -> Bool
     f int mat (Coord y x) = (fromIntegral $ pixelAt y x mat) >= int
 --    f _ _ _ = True 
-    g :: [Coord] -> Double -> Coord -> Bool
-    g ps dist p = all (\x -> x < 0.1 || x>d2) $ map (distSq p) ps -- not very clean. Comparison with all non-self is the best way.
-    d2 = dist * dist
+    g :: [(Coord,Int)] -> Double -> (Coord,Int) -> Bool
+    g ps dist p@(_,int) = all (\(_, intOther) -> intOther <= int) $ filter (adjacent dist p) ps
+    adjacent :: Double -> (Coord,Int) -> (Coord,Int) -> Bool
+    adjacent d (c1,_) (c2,_) = let dd = distSq c1 c2 in dd > 0.1 && dd < d*d
+    h :: Coord -> (Coord,Int)
+    h c@(Coord y x) = (c, pixelAt y x mat)
     distSq :: Coord -> Coord -> Double
     distSq (Coord y1 x1) (Coord y2 x2) = fromIntegral ( (y1-y2)*(y1-y2) + (x1-x2)*(x1-x2) )
 
@@ -59,14 +61,20 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = mapM_ maintrue [1..100]
+main = maintrue 0
 
 maintrue :: Int -> IO ()
 maintrue n = do
   img <- readImg "cell.jpg"
   let ps = findParticles (convert img)
+  let coords = map roundPos ps
+  let out = draw img (map (\x-> Circle x 1 red (-1)) coords)
+  showMatT out
   print (n,(length ps))
   return ()
+
+roundPos :: Pos -> Coord
+roundPos (Pos y x) = Coord (round y) (round x)
 
 demos :: IO ()
 demos = do

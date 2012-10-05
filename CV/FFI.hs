@@ -62,7 +62,9 @@ foreign import ccall "m_changeDepth" c_changeDepth :: CInt -> Ptr CMat -> IO (Pt
 
 -- Drawing
 
-foreign import ccall "m_circle" c_circle :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+foreign import ccall "m_circle" c_circle :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+foreign import ccall "m_rectangle" c_rectangle :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+foreign import ccall "m_line" c_line :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
 
 
 -- Filters
