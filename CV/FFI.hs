@@ -8,8 +8,10 @@ import Foreign.ForeignPtr (ForeignPtr)
 
 import CV.Types
 
-
+-- Mat create and destroy
+foreign import ccall "m_clone" c_clone :: Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
+
 
 foreign import ccall "randMat" c_randMat :: CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()

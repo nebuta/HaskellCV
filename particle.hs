@@ -3,6 +3,7 @@ module Main where
 import CV
 import CV.Filter
 import CV.Demo
+import CV.Draw
 
 import Data.List (sort)
 import Debug.Trace (trace,traceShow)
