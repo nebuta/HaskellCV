@@ -103,15 +103,6 @@ instance ChannelC3 C3HSV
 instance ChannelC3 C3HLS
 instance ChannelC3 C3Lab
 
-newtype CDepth = CDepth {unDepth :: CInt}
-d_u8 = CDepth 0
-d_s8 = CDepth 1
-d_u16 = CDepth 2
-d_s16 = CDepth 3
-d_s32 = CDepth 4
-d_f32 = CDepth 5
-d_f64 = CDepth 6
-
 
 -- Use of Phantom type
 data MatT a b = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1Gray, MatT AnyPixel AnyChannel
@@ -326,7 +317,7 @@ showMatT (MatT m) = do
 
 -- Image operations
 
-readImg :: FilePath -> IO (MatT a b)
+readImg :: FilePath -> IO (MatT AnyDepth AnyChannel)    --ToDo: Consider if AnyDepth and AnyChannel is good, or I should use polymorphic types as a b
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
@@ -340,6 +331,16 @@ newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
 -- data ConvertCode = ConvertCode CInt
 bgrToGray = ConvertCode (ci 6)
 rgbToGray = ConvertCode (ci 7)
+luvToBGR = ConvertCode (ci 58)
+
+newtype CDepth = CDepth {unDepth :: CInt}
+d_u8 = CDepth 0
+d_s8 = CDepth 1
+d_u16 = CDepth 2
+d_s16 = CDepth 3
+d_s32 = CDepth 4
+d_f32 = CDepth 5
+d_f64 = CDepth 6
 
 cvtDepth' :: CDepth -> MatT a b -> MatT c b
 cvtDepth' depth (MatT m) = unsafePerformIO $ do
@@ -364,58 +365,202 @@ class CvtDepth from to where
 class CvtColor from to where
   cvtColor :: MatT a from -> MatT a to
 
--- Conversion between any compatible mat's. Two can have different depths and channels.
-class (CvtDepth a c, CvtColor b d) => Convert a b c d where
-  convert :: MatT a b -> MatT c d
-  convert = cvtColor . cvtDepth
+convert :: (CvtDepth a c, CvtColor b d) => MatT a b -> MatT c d
+convert = cvtColor . cvtDepth
 
+-- Conversion of depth. It only depends on the dest Mat, so there are only 7 kinds.
 instance CvtDepth a U8 where
   cvtDepth = cvtDepth' d_u8
 
-instance CvtDepth a U16 where
-  cvtDepth mat = cvtDepth' d_u16 mat
+instance CvtDepth a S8 where
+  cvtDepth = cvtDepth' d_s8
 
+instance CvtDepth a U16 where
+  cvtDepth = cvtDepth' d_u16
+
+instance CvtDepth a S16 where
+  cvtDepth = cvtDepth' d_s16
+
+instance CvtDepth a S32 where
+  cvtDepth = cvtDepth' d_s32
+
+instance CvtDepth a F32 where
+  cvtDepth = cvtDepth' d_f32
+
+instance CvtDepth a F64 where
+  cvtDepth = cvtDepth' d_f64
+
+
+-- Conversion of colors/channels.
 instance CvtColor C3BGR C1 where
   cvtColor = cvtColor' bgrToGray
 
-instance CvtColor a C1 where
+instance CvtColor C3Luv C3BGR where
+  cvtColor = cvtColor' luvToBGR
+
+-- ... ToDo: Many more color conversion instances (ToDo: is there any good way to avoid listing all combinations?)
+
+-- Special case: unknown src type. (ToDo: a should be AnyChannel, or can I just leave it polymorphic?)
+instance CvtColor AnyChannel C1 where
   cvtColor mat@(MatT m) = case numChannels mat of
                 3 -> cvtColor' bgrToGray mat   -- Assuming BGR. since AnyChannel is returned only from readImg.
                 1 -> (MatT m) :: MatT a C1 
                 _ -> error "Only C1 or C3 can be converted to C1"
 
-instance Convert a b U8 C1  -- Just use a default implementation
+--
+-- Get pixel(s)
+--
+
+-- ToDo: Design multi-channel support 
 
 class Pixel a b where
   type PixelType a b :: *
   pixelAt :: Int -> Int -> MatT a b -> PixelType a b
   pixels :: MatT a b -> [[PixelType a b]]
-  findPixels :: PixelType a b -> MatT a b -> [Coord]
   percentile :: Double -> MatT a b -> PixelType a b
 
 instance Pixel U8 C1 where
   type PixelType U8 C1 = Int
-  pixelAt = pixelIntAt
-  pixels = pixelsInt
+  pixels = pixelsU8
+  pixelAt = pixelAtInt
   percentile = percentileInt
 
+instance Pixel S8 C1 where
+  type PixelType S8 C1 = Int
+  pixels = pixelsS8
+  pixelAt = pixelAtInt
+  percentile = percentileInt
+
+instance Pixel U16 C1 where
+  type PixelType U16 C1 = Int
+  pixels = pixelsU16
+  pixelAt = pixelAtInt
+  percentile = percentileInt
+
+instance Pixel S16 C1 where
+  type PixelType S16 C1 = Int
+  pixels = pixelsS16
+  pixelAt = pixelAtInt
+  percentile = percentileInt
+
+instance Pixel S32 C1 where
+  type PixelType S32 C1 = Int
+  pixels = pixelsS32
+  pixelAt = pixelAtInt
+  percentile = percentileInt
+
+instance Pixel F32 C1 where
+  type PixelType F32 C1 = Float
+  pixels = pixelsF32
+  pixelAt = pixelAtFloat
+  percentile p = realToFrac . percentileFloat p
+
+instance Pixel F64 C1 where
+  type PixelType F64 C1 = Double
+  pixels = pixelsF64
+  pixelAt = pixelAtDouble
+  percentile = percentileFloat
+
 --ToDo: check if this is correct.
-pixelsInt :: (ChannelC1 b) => MatT a b -> [[Int]]   --Single channel
-pixelsInt mat@(MatT m) = unsafePerformIO $ do
+pixelsU8 :: (ChannelC1 b) => MatT U8 b -> [[Int]]   --Single channel
+pixelsU8 mat@(MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     let nr = (numRows mat)
     let nc = (numCols mat)
-    pp <- c_valsUChar mm
+    pp <- c_valsU8 mm    --Only uchar!!!!!
     row_ptrs <- peekArray nr pp
     val <- mapM (peekArray nc) row_ptrs
     free pp  --ToDo: Is this good?
-    return (map (map fromIntegral) val)
+    return $ map (map fromIntegral) val
 
-pixelIntAt  :: Int -> Int -> MatT a b -> Int
-pixelIntAt y x (MatT m) = unsafePerformIO $ do
+pixelsS8 :: (ChannelC1 b) => MatT S8 b -> [[Int]]   --Single channel
+pixelsS8 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsS8 mm 
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return $ map (map fromIntegral) val
+
+pixelsU16 :: (ChannelC1 b) => MatT U16 b -> [[Int]]   --Single channel
+pixelsU16 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsU16 mm   
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return $ map (map fromIntegral) val
+
+pixelsS16 :: (ChannelC1 b) => MatT S16 b -> [[Int]]   --Single channel
+pixelsS16 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsS16 mm  
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return $ map (map fromIntegral) val
+
+pixelsS32 :: (ChannelC1 b) => MatT S32 b -> [[Int]]   --Single channel
+pixelsS32 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsS32 mm 
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return $ map (map fromIntegral) val
+
+pixelsF32 :: (ChannelC1 b) => MatT F32 b -> [[Float]]   --Single channel
+pixelsF32 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsF32 mm
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return (map (map realToFrac) val)
+
+
+pixelsF64 :: (ChannelC1 b) => MatT F64 b -> [[Double]]   --Single channel
+pixelsF64 mat@(MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    let nr = (numRows mat)
+    let nc = (numCols mat)
+    pp <- c_valsF64 mm
+    row_ptrs <- peekArray nr pp
+    val <- mapM (peekArray nc) row_ptrs
+    free pp  --ToDo: Is this good?
+    return (map (map realToFrac) val)
+
+
+--Single channel
+pixelAtInt  :: Int -> Int -> MatT a b -> Int
+pixelAtInt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_pixelIntAt (ci y) (ci x) mm
     return (fromIntegral val)
+
+  --Single channel
+pixelAtFloat :: Int -> Int -> MatT a b -> Float
+pixelAtFloat y x (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_pixelFloatAt (ci y) (ci x) mm
+    return (realToFrac val)
+
+  --Single channel
+pixelAtDouble :: Int -> Int -> MatT a b -> Double
+pixelAtDouble y x (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_pixelDoubleAt (ci y) (ci x) mm
+    return (realToFrac val)
 
 percentileInt :: (DepthInt a) => Double -> MatT a b -> Int
 percentileInt perc (MatT m) = unsafePerformIO $ do

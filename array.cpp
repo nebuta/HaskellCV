@@ -98,6 +98,7 @@ extern "C" {
     // Get pixels
     //
     
+    //Not used for now. But this is better performance
     //Continuous uchar
     uchar* m_valsUCharC(Mat* mat)
     {
@@ -117,42 +118,78 @@ extern "C" {
             return mat->ptr<char>(0);
         }
     }
-    //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
-    uchar** m_valsUChar(Mat* mat)
-    {
-        //       puts("m_valsUChar() start.");
-        if (mat->depth() != CV_8U)
-            return NULL;
-        else {
-            int channels = mat->channels();
-            int nRows = mat->rows * channels;
-            uchar** ps = new uchar*[nRows];
-            
-            for( int i = 0; i < nRows; ++i)
-            {
-                ps[i] = mat->ptr<uchar>(i);
-            }
-            //        puts("m_valsUChar() end.");
-            return ps;
+    
+    extern "C++" {
+        template <typename T> T** valPtr(Mat* mat){
+                int channels = mat->channels();
+                int nRows = mat->rows * channels;
+                T** ps = new T*[nRows];
+                
+                for( int i = 0; i < nRows; ++i)
+                {
+                    ps[i] = mat->ptr<T>(i);
+                }
+                return ps;
         }
     }
     
+    //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
+    uchar** m_valsU8(Mat* mat)
+    {
+        if (mat->depth() != CV_8U)
+            return NULL;
+        else
+            return valPtr<uchar>(mat);
+    }
     //(possibly noncontinuous) char (returns array of uchar*, this should be freed by Haskell side)
-    char** m_valsChar(Mat* mat)
+    char** m_valsS8(Mat* mat)
     {
         if (mat->depth() != CV_8S)
             return NULL;
-        else {
-            int channels = mat->channels();
-            int nRows = mat->rows * channels;
-            char** ps = new char*[nRows];
-            
-            for( int i = 0; i < nRows; ++i)
-            {
-                ps[i] = mat->ptr<char>(i);
-            }
-            return ps;
-        }
+        else
+            return valPtr<char>(mat);
+    }
+
+    uint16_t** m_valsU16(Mat* mat)
+    {
+        if (mat->depth() != CV_16U)
+            return NULL;
+        else
+            return valPtr<uint16_t>(mat);
+    }
+    
+    int16_t** m_valsS16(Mat* mat)
+    {
+        if (mat->depth() != CV_16S)
+            return NULL;
+        else
+            return valPtr<int16_t>(mat);
+    }
+    
+    int32_t** m_valsS32(Mat* mat)
+    {
+        if (mat->depth() != CV_32S)
+            return NULL;
+        else
+            return valPtr<int32_t>(mat);
+    }
+    
+    
+    float** m_valsF32(Mat* mat)
+    {
+        if (mat->depth() != CV_32F)
+            return NULL;
+        else
+            return valPtr<float>(mat);
+    }
+    
+    
+    double** m_valsF64(Mat* mat)
+    {
+        if (mat->depth() != CV_64F)
+            return NULL;
+        else
+            return valPtr<double>(mat);
     }
     
     //

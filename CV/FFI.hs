@@ -22,7 +22,14 @@ foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> 
 foreign import ccall "m_pixelFloatAt" c_pixelFloatAt :: CInt -> CInt -> Ptr CMat -> IO CFloat
 foreign import ccall "m_pixelDoubleAt" c_pixelDoubleAt :: CInt -> CInt -> Ptr CMat -> IO CDouble
 
-foreign import ccall "m_valsUChar" c_valsUChar :: Ptr CMat -> IO (Ptr (Ptr CUChar))
+foreign import ccall "m_valsU8" c_valsU8 :: Ptr CMat -> IO (Ptr (Ptr CUChar))
+foreign import ccall "m_valsS8" c_valsS8 :: Ptr CMat -> IO (Ptr (Ptr CChar))
+foreign import ccall "m_valsU16" c_valsU16 :: Ptr CMat -> IO (Ptr (Ptr CUShort))
+foreign import ccall "m_valsS16" c_valsS16 :: Ptr CMat -> IO (Ptr (Ptr CShort))
+foreign import ccall "m_valsS32" c_valsS32 :: Ptr CMat -> IO (Ptr (Ptr CInt))
+foreign import ccall "m_valsF32" c_valsF32 :: Ptr CMat -> IO (Ptr (Ptr CFloat))
+foreign import ccall "m_valsF64" c_valsF64 :: Ptr CMat -> IO (Ptr (Ptr CDouble))
+
 
 foreign import ccall "m_type" c_type :: Ptr CMat -> IO CInt
 foreign import ccall "m_channels" c_channels :: Ptr CMat -> IO CInt
