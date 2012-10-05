@@ -24,17 +24,17 @@ detect img = refinePos $ filtered maxima
     dilated = dilate (fromStrEl (Ellipse 3 3)) img
     intensities = (reverse . sort . concat . pixels) img
 
-findIndexMat :: CmpFun a b c -> MatT a b c -> MatT a b c-> [Coord]
+findIndexMat :: CmpFun a b -> MatT a b -> MatT a b -> [Coord]
 findIndexMat f a b = findNonZero $ CV.Core.compare f a b
 
 refinePos :: [Coord] -> [Pos]
 refinePos cs = map f cs
   where f (Coord y x) = Pos (fromIntegral y) (fromIntegral x)--Stub
 
-filterThresAndDist :: Double -> Double -> MatT U8 C1 Gray -> [Coord] -> [Coord]
+filterThresAndDist :: Double -> Double -> MatT U8 C1-> [Coord] -> [Coord]
 filterThresAndDist int dist mat ps = filter (\p -> f int mat p && g ps dist p) ps
   where
-    f :: Double -> MatT U8 C1 Gray -> Coord -> Bool
+    f :: Double -> MatT U8 C1-> Coord -> Bool
     f int mat (Coord y x) = (fromIntegral $ pixelAt y x mat) >= int
 --    f _ _ _ = True 
     g :: [Coord] -> Double -> Coord -> Bool

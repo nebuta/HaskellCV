@@ -14,24 +14,6 @@ data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
 
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
 
--- Matrix basic operations
-{-
-foreign import ccall unsafe "m_row" c_row :: Ptr CMat -> CInt -> IO (Ptr CMat)
-foreign import ccall unsafe "m_col" c_col :: Ptr CMat -> CInt -> IO (Ptr CMat)
-foreign import ccall unsafe "m_rowRange" c_rowRange :: Ptr CMat -> CInt -> CInt -> IO (Ptr CMat)
-foreign import ccall unsafe "m_colRange" c_colRange :: Ptr CMat -> CInt -> CInt -> IO (Ptr CMat)
-
--- foreign import ccall unsafe "m_diag" c_diag :: Ptr CMat -> CInt -> IO (Ptr CMat)
--- foreign import ccall unsafe "m_copyTo" c_copyTo :: Ptr CMat -> Ptr CMat -> IO ()
--- Mat::convertTo
--- Mat::assignTo
--- Mat::setTo
-foreign import ccall unsafe "m_setTo" c_setTo :: Ptr CMat -> Ptr CMat -> Ptr CMat -> IO ()
-
--- Mat::reshape
-foreign import ccall unsafe "m_clone" c_clone :: Ptr CMat -> IO (Ptr CMat)
--}
-
 foreign import ccall "randMat" c_randMat :: CInt -> CInt -> IO (Ptr CMat)
 foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
@@ -49,8 +31,8 @@ foreign import ccall "m_cols" c_cols :: Ptr CMat -> IO CInt
 
 foreign import ccall "m_hist" c_hist :: CInt -> CInt -> CFloat -> CFloat -> Ptr CMat -> IO (Ptr CInt) 
 
-
 foreign import ccall "m_percentileInt" c_percentileInt :: CDouble -> Ptr CMat -> IO CInt 
+foreign import ccall "m_percentileFloat" c_percentileFloat :: CDouble -> Ptr CMat -> IO CDouble
 
 foreign import ccall "m_add" c_addMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_sub" c_subMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
