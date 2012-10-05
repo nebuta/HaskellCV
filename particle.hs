@@ -7,6 +7,8 @@ import CV.Demo
 import Data.List (sort)
 import Debug.Trace (trace,traceShow)
 
+import Control.Concurrent (forkIO)
+
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
   where prefilter = gauss 3
@@ -16,9 +18,9 @@ detect img = refinePos $ filtered maxima
   where
     maxima = findIndexMat cmpEqual img dilated
     filtered ms = filterThresAndDist minInt minDist img ms
-    percentile = 20.0   -- in %
-    minInt = fromIntegral $ intensities !! (floor $ percentile / 100.0 * fromIntegral (length intensities))
-    minDist = 1
+    perc = 20.0   -- in %
+    minInt = fromIntegral $ percentile perc img
+    minDist = 3
     dilated = dilate (fromStrEl (Ellipse 3 3)) img
     intensities = (reverse . sort . concat . pixels) img
 
@@ -62,7 +64,8 @@ maintrue :: Int -> IO ()
 maintrue n = do
   img <- readImg "cell.jpg"
   let ps = findParticles (convert img)
-  print (length ps)
+  print (n,(length ps))
+  return ()
 
 demos :: IO ()
 demos = do

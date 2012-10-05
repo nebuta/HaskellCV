@@ -367,11 +367,15 @@ class Pixel a b c where
   pixelAt :: Int -> Int -> MatT a b c -> PixelType a b c
   pixels :: MatT a b c -> [[PixelType a b c]]
   findPixels :: PixelType a b c -> MatT a b c -> [Coord]
+  percentile :: Double -> MatT a b c -> PixelType a b c
+
+
 
 instance Pixel U8 C1 Gray where
   type PixelType U8 C1 Gray = Int
   pixelAt = pixelIntAt
   pixels = pixelsInt
+  percentile = percentileInt
 
 --ToDo: check if this is correct.
 pixelsInt :: MatT a C1 c -> [[Int]]   --Single channel
@@ -390,6 +394,13 @@ pixelIntAt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_pixelIntAt (ci y) (ci x) mm
     return (fromIntegral val)
+
+percentileInt :: Double -> MatT a b c -> Int
+percentileInt perc (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_percentileInt (cd perc) mm
+    return (fromIntegral val)
+
 
 findNonZero :: MatT a C1 c -> [Coord]
 findNonZero (MatT m) = unsafePerformIO $ do

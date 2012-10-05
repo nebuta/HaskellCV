@@ -1,5 +1,7 @@
 module CV.Demo where
 
+import Control.Concurrent (forkIO)
+
 import CV.Core
 import CV.Filter
 
