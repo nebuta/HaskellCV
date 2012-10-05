@@ -45,29 +45,63 @@ instance DepthType S32
 instance DepthType F32
 instance DepthType F64
 
+class (DepthType a) => DepthInt a
+instance DepthInt U8
+instance DepthInt S8
+instance DepthInt U16
+instance DepthInt S16
+instance DepthInt S32
+
+class (DepthType a) => DepthFloat a
+instance DepthFloat F32
+instance DepthFloat F64
+
+
 data AnyChannel
 data C1
+data C1Gray
 data C2
 data C3
+data C3BGR
+data C3XYZ
+data C3Luv
+data C3YCrCb
+data C3HSV
+data C3HLS
+data C3Lab
 data C4
-data Ch = Ch Int
+data C4BGRA
+data CN
 
 class ChannelType a
+instance ChannelType AnyChannel
 instance ChannelType C1
+instance ChannelType C1Gray
 instance ChannelType C2
 instance ChannelType C3
+instance ChannelType C3BGR
+instance ChannelType C3XYZ
+instance ChannelType C3Luv
+instance ChannelType C3YCrCb
+instance ChannelType C3HSV
+instance ChannelType C3HLS
+instance ChannelType C3Lab
 instance ChannelType C4
-instance ChannelType Ch
+instance ChannelType C4BGRA
+instance ChannelType CN
 
-data AnyColor
-data RGBColor
-data HSV
-data Gray
+class (ChannelType a) => ChannelC1 a
+instance ChannelC1 C1
 
-class ColorType a
-instance ColorType RGBColor
-instance ColorType HSV
-instance ColorType Gray
+class (ChannelType a) => ChannelC3 a
+instance ChannelC3 C3
+instance ChannelC3 C3BGR
+instance ChannelC3 C3XYZ
+instance ChannelC3 C3Luv
+instance ChannelC3 C3YCrCb
+instance ChannelC3 C3HSV
+instance ChannelC3 C3HLS
+instance ChannelC3 C3Lab
 
 newtype CDepth = CDepth {unDepth :: CInt}
 d_u8 = CDepth 0
@@ -80,11 +114,10 @@ d_f64 = CDepth 6
 
 
 -- Use of Phantom type
-data MatT a b c = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1 Gray, MatT AnyPixel AnyChannel AnyColor
-data Scalar = Scalar !(ForeignPtr CScalar)
+data MatT a b = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1Gray, MatT AnyPixel AnyChannel
 
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
-data MatType = CV_8UC1 | CV_8UC2 | CV_8UC3 | CV_16UC1 | AnyPixel deriving (Eq,Ord)
+cv8UC1 = CMatType 0
 
 type GrayImage = MatT U8 C1 Gray
 
@@ -177,12 +210,12 @@ numCols (MatT m) = unsafePerformIO $ do
       return (fromIntegral t)
 
 
-matType :: MatT a b c -> MatType
+matType :: MatT a b c -> CMatType
 matType (MatT m) = 
   unsafePerformIO $ do
     withForeignPtr m $ \mm -> do
       t <- c_type mm
-      return (fromCMatType (CMatType t))
+      return (CMatType t)
 
 numChannels :: MatT a b c -> Int
 numChannels (MatT m) = unsafePerformIO $ do
@@ -251,7 +284,7 @@ cvAbs (MatT m) =
 
 
 -- |Matrix element-wise multiplication. Currently only the same type
-(*:*) :: MatT a b c -> MatT a b c -> MatT a b c
+(*:*) :: MatT a b -> MatT a b -> MatT a b
 (MatT a) *:* (MatT b) = unsafePerformIO $ do
   withForeignPtr a $ \aa -> do
     withForeignPtr b $ \bb -> do
@@ -260,7 +293,7 @@ cvAbs (MatT m) =
       return (MatT mat)
 
 -- |Matrix division by a scalar
-(/:) :: (Real d) => MatT a b c -> d -> MatT a b c
+(/:) :: (Real c) => MatT a b -> c -> MatT a b
 (MatT a) /: denom
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -270,7 +303,7 @@ cvAbs (MatT m) =
 
 -- |Matrix element-wise division
 -- ToDo: Is this correct? the same type for a return value??
-(/:/) :: MatT a b c -> MatT a b c -> MatT a b c
+(/:/) :: MatT a b -> MatT a b -> MatT a b
 (MatT a) /:/ (MatT b) 
   = unsafePerformIO $ do
       withForeignPtr a $ \aa -> do
@@ -280,20 +313,20 @@ cvAbs (MatT m) =
           return (MatT mat)
 
 -- Phantom types conversion  Not safe!!!
-forceCast :: MatT a b c -> MatT d e f
+forceCast :: MatT a b@-> MatT c d
 forceCast (MatT m) = MatT m
 
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
-monoColor :: Int -> Int -> RGB -> MatT U8 C3 RGBColor
+monoColor :: Int -> Int -> RGB -> MatT U8 C3BGR
 monoColor h w (RGB r g b)
   = unsafePerformIO $ do
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
       mat <- newForeignPtr cmatFree mat_ptr
       return (MatT mat)
 
-showMatT :: MatT a b c -> IO ()
+showMatT :: MatT a b -> IO ()
 showMatT (MatT m) = do
   withForeignPtr m $ \mm -> do
     c_showMat mm
@@ -303,7 +336,7 @@ showMatT (MatT m) = do
 
 -- Image operations
 
-readImg :: FilePath -> IO (MatT AnyDepth AnyChannel AnyColor)
+readImg :: FilePath -> IO (MatT a b)
 readImg file = do
   withCString file $ \cstr_path -> do
     mat_ptr <- c_readImg cstr_path
@@ -315,16 +348,17 @@ readImg file = do
 
 newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
 -- data ConvertCode = ConvertCode CInt
+bgrToGray = ConvertCode (ci 6)
 rgbToGray = ConvertCode (ci 7)
 
-cvtDepth' :: CDepth -> MatT a b c -> MatT d b c
+cvtDepth' :: CDepth -> MatT a b -> MatT c b
 cvtDepth' depth (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     mat_ptr <- m_changeDepth (unDepth depth) mm
     mat <- newForeignPtr cmatFree mat_ptr 
     return $ MatT mat
 
-cvtColor' :: ConvertCode -> MatT a b c -> MatT a d e
+cvtColor' :: ConvertCode -> MatT a b -> MatT a c
 cvtColor' (ConvertCode code) (MatT m)
   = unsafePerformIO $ do
       withForeignPtr m $ \mm -> do
@@ -334,15 +368,15 @@ cvtColor' (ConvertCode code) (MatT m)
 
 -- conversion of depth
 class CvtDepth from to where
-  cvtDepth :: MatT from a b -> MatT to a b
+  cvtDepth :: MatT from a -> MatT to a
 
 -- conversion of channels, keep depth (a)
 class CvtColor from to where
-  cvtColor :: MatT a from b -> MatT a to c
+  cvtColor :: MatT a from -> MatT a to
 
 -- Conversion between any compatible mat's. Two can have different depths and channels.
-class (CvtDepth a d, CvtColor b e) => Convert a b c d e f where
-  convert :: MatT a b c -> MatT d e f
+class (CvtDepth a c, CvtColor b d) => Convert a b c d where
+  convert :: MatT a b -> MatT c d
   convert = cvtColor . cvtDepth
 
 class ConvertAny a b c where
@@ -356,25 +390,27 @@ instance CvtDepth a U16 where
 
 instance CvtColor AnyChannel C1 where
   cvtColor mat@(MatT m) = case numChannels mat of
-                3 -> cvtColor' rgbToGray mat   -- Assuming RGB. since AnyChannel is returned only from readImg.
-                1 -> (MatT m) :: MatT a C1 b  --ToDo :: This can be cast to any color, so this is wrong. Channel and color should be merged. Color info inherently contains channel number info.
+                3 -> cvtColor' bgrToGray mat   -- Assuming BGR. since AnyChannel is returned only from readImg.
+                1 -> (MatT m) :: MatT a C1 
                 _ -> error "Only C1 or C3 can be converted to C1"
 
-instance Convert AnyDepth AnyChannel AnyColor U8 C1 Gray
+instance Convert AnyDepth AnyChannel U8 C1  -- Just use a default implementation
 
-class Pixel a b c where
-  type PixelType a b c :: *
-  pixelAt :: Int -> Int -> MatT a b c -> PixelType a b c
-  pixels :: MatT a b c -> [[PixelType a b c]]
-  findPixels :: PixelType a b c -> MatT a b c -> [Coord]
+class Pixel a b where
+  type PixelType a b :: *
+  pixelAt :: Int -> Int -> MatT a b -> PixelType a b
+  pixels :: MatT a b -> [[PixelType a b]]
+  findPixels :: PixelType a b -> MatT a b -> [Coord]
+  percentile :: Double -> MatT a b -> PixelType a b
 
-instance Pixel U8 C1 Gray where
-  type PixelType U8 C1 Gray = Int
+instance Pixel U8 C1Gray where
+  type PixelType U8 C1Gray = Int
   pixelAt = pixelIntAt
   pixels = pixelsInt
+  percentile = percentileInt
 
 --ToDo: check if this is correct.
-pixelsInt :: MatT a C1 c -> [[Int]]   --Single channel
+pixelsInt :: (ChannelC1 b) => MatT a b -> [[Int]]   --Single channel
 pixelsInt mat@(MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     let nr = (numRows mat)
@@ -385,13 +421,26 @@ pixelsInt mat@(MatT m) = unsafePerformIO $ do
     free pp  --ToDo: Is this good?
     return (map (map fromIntegral) val)
 
-pixelIntAt  :: Int -> Int -> MatT a b c -> Int
+pixelIntAt  :: Int -> Int -> MatT a b -> Int
 pixelIntAt y x (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_pixelIntAt (ci y) (ci x) mm
     return (fromIntegral val)
 
-findNonZero :: MatT a C1 c -> [Coord]
+percentileInt :: (DepthInt a) => Double -> MatT a b -> Int
+percentileInt perc (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_percentileInt (cd perc) mm
+    return (fromIntegral val)
+
+percentileFloat :: (DepthFloat a) => Double -> MatT a b -> Double
+percentileFloat perc (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_percentileFloat (cd perc) mm
+    return (realToFrac val)
+
+
+findNonZero :: (ChannelC1 b) => MatT a b -> [Coord]
 findNonZero (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     ptr <- c_findNonZero mm

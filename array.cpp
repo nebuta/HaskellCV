@@ -18,6 +18,10 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
+    //
+    // Getting Mat info
+    //
+    
     int m_rows(Mat* mat){
         return mat->rows;
     }
@@ -34,6 +38,10 @@ extern "C" {
         return mat->channels();
     }
     
+    //
+    // Convert depth/channel/color
+    //
+    
     //change depth with the same size and channels
     Mat* m_changeDepth(int depth, Mat* mat){
         int type = mat->type() + depth - mat->depth();
@@ -41,6 +49,10 @@ extern "C" {
         mat->convertTo(*res, type);
         return res;
     }
+    
+    //
+    // Get a single pixel
+    //
     
     int m_pixelIntAt(int y, int x, Mat* mat){
         int ret;
@@ -81,6 +93,71 @@ extern "C" {
         //     printf("#%d %d %d\n",y,x,ret);
         return ret;
     }
+    
+    //
+    // Get pixels
+    //
+    
+    //Continuous uchar
+    uchar* m_valsUCharC(Mat* mat)
+    {
+        if (!mat->isContinuous() || mat->depth() != CV_8U)
+            return NULL;
+        else {
+            return mat->ptr<uchar>(0);
+        }
+    }
+    
+    //Continuous char
+    char* m_valsCharC(Mat* mat)
+    {
+        if (!mat->isContinuous() || mat->depth() != CV_8S)
+            return NULL;
+        else {
+            return mat->ptr<char>(0);
+        }
+    }
+    //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
+    uchar** m_valsUChar(Mat* mat)
+    {
+        //       puts("m_valsUChar() start.");
+        if (mat->depth() != CV_8U)
+            return NULL;
+        else {
+            int channels = mat->channels();
+            int nRows = mat->rows * channels;
+            uchar** ps = new uchar*[nRows];
+            
+            for( int i = 0; i < nRows; ++i)
+            {
+                ps[i] = mat->ptr<uchar>(i);
+            }
+            //        puts("m_valsUChar() end.");
+            return ps;
+        }
+    }
+    
+    //(possibly noncontinuous) char (returns array of uchar*, this should be freed by Haskell side)
+    char** m_valsChar(Mat* mat)
+    {
+        if (mat->depth() != CV_8S)
+            return NULL;
+        else {
+            int channels = mat->channels();
+            int nRows = mat->rows * channels;
+            char** ps = new char*[nRows];
+            
+            for( int i = 0; i < nRows; ++i)
+            {
+                ps[i] = mat->ptr<char>(i);
+            }
+            return ps;
+        }
+    }
+    
+    //
+    // Elementary arithmetic
+    //
     
     Mat* m_abs(Mat* mat) {
         Mat m = cv::abs(*mat);
@@ -125,6 +202,17 @@ extern "C" {
         int count = countNonZero(res);
         return (count == 0) ? 1 : 0;
     }
+    
+    Mat* addWeighted(Mat* ma, double alpha, Mat* mb, double beta, double gamma) {
+        Mat res;
+        cv::addWeighted(*ma, alpha, *mb, beta, gamma, res);
+        Mat *res2 = new Mat(res);
+        return res2;
+    }
+    
+    //
+    // Comparison and search
+    //
     
     Mat* m_compare(Mat* a, Mat* b, int code){
  //                 printf("m_compare() start.\n");
@@ -199,76 +287,14 @@ extern "C" {
         }
     }
 
-    
+    //
+    // Statistics and histogram
+    //
     
     double m_mean(Mat* mat){
         return cv::mean(*mat)[0];
     }
-    
-    Mat* addWeighted(Mat* ma, double alpha, Mat* mb, double beta, double gamma) {
-        Mat res;
-        cv::addWeighted(*ma, alpha, *mb, beta, gamma, res);
-        Mat *res2 = new Mat(res);
-        return res2;
-    }
-    
-    //Continuous uchar
-    uchar* m_valsUCharC(Mat* mat)
-    {
-        if (!mat->isContinuous() || mat->depth() != CV_8U)
-            return NULL;
-        else {
-            return mat->ptr<uchar>(0);
-        }
-    }
-    
-    //Continuous char
-    char* m_valsCharC(Mat* mat)
-    {
-        if (!mat->isContinuous() || mat->depth() != CV_8S)
-            return NULL;
-        else {
-            return mat->ptr<char>(0);
-        }
-    }
-    //(possibly noncontinuous) uchar (returns array of uchar*, this should be freed by Haskell side)
-    uchar** m_valsUChar(Mat* mat)
-    {
- //       puts("m_valsUChar() start.");
-        if (mat->depth() != CV_8U)
-            return NULL;
-        else {
-            int channels = mat->channels();
-            int nRows = mat->rows * channels;        
-            uchar** ps = new uchar*[nRows];
-            
-            for( int i = 0; i < nRows; ++i)
-            {
-                ps[i] = mat->ptr<uchar>(i);
-            }
- //        puts("m_valsUChar() end.");
-            return ps;
-        }
-    }
-    
-    //(possibly noncontinuous) char (returns array of uchar*, this should be freed by Haskell side)
-    char** m_valsChar(Mat* mat)
-    {
-        if (mat->depth() != CV_8S)
-            return NULL;
-        else {
-            int channels = mat->channels();
-            int nRows = mat->rows * channels;
-            char** ps = new char*[nRows];
-            
-            for( int i = 0; i < nRows; ++i)
-            {
-                ps[i] = mat->ptr<char>(i);
-            }
-            return ps;
-        }
-    }
-    
+
     //For now, only single channel images
     int* m_hist(int channel, int numBins, float min, float max, Mat* mat){
 //        puts("m_hist() start.");
