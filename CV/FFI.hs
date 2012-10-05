@@ -57,6 +57,12 @@ foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
 foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_changeDepth" c_changeDepth :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
+
+-- Drawing
+
+foreign import ccall "m_circle" c_circle :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> CInt -> CInt -> IO ()
+
+
 -- Filters
 
 foreign import ccall "f_gaussian" c_gaussian :: CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
