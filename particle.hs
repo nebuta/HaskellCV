@@ -1,6 +1,6 @@
 module Main where
 
-import CV.Core
+import CV
 import CV.Filter
 import CV.Demo
 
@@ -25,7 +25,7 @@ detect img = refinePos $ filtered maxima
     intensities = (reverse . sort . concat . pixels) img
 
 findIndexMat :: CmpFun a b -> MatT a b -> MatT a b -> [Coord]
-findIndexMat f a b = findNonZero $ CV.Core.compare f a b
+findIndexMat f a b = findNonZero $ CV.compare f a b
 
 refinePos :: [Coord] -> [Pos]
 refinePos cs = map f cs

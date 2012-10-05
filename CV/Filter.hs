@@ -1,6 +1,7 @@
 module CV.Filter where
 
 import CV.Core
+import CV.Types
 import CV.FFI
 
 import Foreign.C

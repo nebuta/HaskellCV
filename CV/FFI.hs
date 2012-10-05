@@ -6,11 +6,8 @@ import Foreign.C
 import Foreign.Ptr
 import Foreign.ForeignPtr (ForeignPtr)
 
-data CMat -- Mat type in C++ OpenCV
-data CScalar -- Scalar type in C++ OpenCV
+import CV.Types
 
-data CFilterEngine
-data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
 
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
 
@@ -58,7 +55,7 @@ foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat)
 -- image operations
 foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
 foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "m_changeDepth" m_changeDepth :: CInt -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "m_changeDepth" c_changeDepth :: CInt -> Ptr CMat -> IO (Ptr CMat)
 
 -- Filters
 

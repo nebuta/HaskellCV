@@ -2,7 +2,7 @@ module CV.Demo where
 
 import Control.Concurrent (forkIO)
 
-import CV.Core
+import CV
 import CV.Filter
 
 import Data.List (foldl')
