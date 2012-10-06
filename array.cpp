@@ -20,6 +20,59 @@ extern "C" {
     
     // Creating and destroying Mat
     
+    Mat* m_newMat(int type, int rows, int cols){
+        Mat *mat = new Mat(type,rows,cols);
+        
+        return mat;
+    }
+    
+    extern "C++" {
+        template <typename T> void fillMatRandFloat(Mat *mat, T min, T max){
+            for(int y=0; y < mat->rows; y++){
+                for(int x=0; x < mat->rows; x++){
+                    mat->at<T>(y,x) = min+(T)rand()/((T)RAND_MAX/(max-min));
+                }
+            }
+        }
+        template <typename T> void fillMatRandInt(Mat *mat, T min, T max){
+            for(int y=0; y < mat->rows; y++){
+                for(int x=0; x < mat->rows; x++){
+                    mat->at<T>(y,x) = min+(T)rand()%(max-min+1);
+                }
+            }
+        }
+    }
+    
+    Mat* m_randMat(int type, int rows, int cols){
+        Mat *mat = new Mat(type,rows,cols);
+        switch(mat->depth()){
+            case CV_8U:
+                fillMatRandInt<uchar>(mat,0,UCHAR_MAX);
+                break;
+            case CV_8S:
+                fillMatRandInt<char>(mat,CHAR_MIN,CHAR_MAX);
+                break;
+            case CV_16U:
+                fillMatRandInt<uint16_t>(mat,0,UINT16_MAX);
+                break;
+            case CV_16S:
+                fillMatRandInt<int16_t>(mat,INT16_MIN,INT16_MAX);
+                break;
+            case CV_32S:
+                fillMatRandInt<int32_t>(mat,INT32_MIN,INT32_MAX);
+                break;
+            case CV_32F:
+                fillMatRandFloat<float>(mat,0,1);
+                break;
+            case CV_64F:
+                fillMatRandFloat<double>(mat,0,1);
+                break;
+                
+        }
+        
+        return mat;
+    }
+    
     Mat* m_clone(Mat* mat){
         Mat res = mat->clone();
         Mat *ret = new Mat(res);

@@ -18,10 +18,6 @@ data Shape = Circle Coord Radius RGB Thickness
               | Rect Coord Coord RGB Thickness
               | Line Coord Coord RGB Thickness
 
--- ToDo: Design a monad for destructive update like MArray
--- Outside the monad, referential transparency should be maintained.
---
-
 draw :: MatT a b -> [Shape] -> MatT a b
 draw (MatT m) shapes = unsafePerformIO $ do
     withForeignPtr m $ \mm -> do

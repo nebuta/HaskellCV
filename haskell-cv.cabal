@@ -1,0 +1,63 @@
+name:              haskell-cv 
+version:           0.1.0
+license:           BSD3
+license-file:      LICENSE
+author:            Nebuta
+maintainer:        Nebuta
+synopsis:          Purely functional OpenCV binding with rich type support.
+description:       OpenCV 2.4 wrapper with rich type support. You can compose matrix processing functions in a purely functional manner, while taking advantage of high performance of OpenCV.
+category:          Graphics, Math
+stability:         Experimental
+cabal-version:     >= 1.8
+build-type:        Simple
+homepage:          http://github.com/nebuta
+
+Flag dev
+    Description:   Turn on development settings, like auto-reload templates.
+    Default:       False
+
+Flag library-only
+    Description:   Build for use with "yesod devel"
+    Default:       False
+
+library
+    exposed-modules: CV
+                     CV.Core
+                     CV.Filter
+                     CV.Draw
+                     CV.Types
+
+
+    if flag(dev) || flag(library-only)
+        cpp-options:   -DDEVELOPMENT
+        ghc-options:   -Wall -O0 -fno-warn-hi-shadowing
+    else
+        ghc-options:   -Wall -O2
+
+    build-depends: base                          >= 4          && < 5
+                 
+executable         PaperServer
+    if flag(library-only)
+        Buildable: False
+
+    main-is:           ../main.hs
+    hs-source-dirs:    dist
+    build-depends:     base
+                     , PaperServer
+                     , yesod-default
+
+    ghc-options:       -threaded -O2
+
+test-suite test
+    type:              exitcode-stdio-1.0
+    main-is:           main.hs
+    hs-source-dirs:    tests
+    ghc-options:       -Wall
+
+    build-depends: base
+                 , PaperServer
+                 , yesod-test
+                 , yesod-default
+                 , yesod-core
+                 , persistent                    >= 1.0        && < 1.1
+                 , persistent-mongoDB     >= 1.0        && < 1.1

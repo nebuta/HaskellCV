@@ -7,7 +7,6 @@ import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.C -- get the C types
 import System.IO.Unsafe (unsafePerformIO)
 
-
 -- For MatT phantom types
 -- ToDo: AnyDepth, AnyChannel, AnyColor should only be used for a Mat returned from readImg 
 data AnyDepth
@@ -94,10 +93,16 @@ data CFilterEngine
 data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
 
 -- Use of Phantom type
-data MatT a b = MatT !(ForeignPtr CMat) -- stub e.g. MatT U8 C1Gray, MatT AnyPixel AnyChannel
+data MatT a b = MatT !(ForeignPtr CMat) deriving Show
 
 newtype CMatType = CMatType {unCMatType :: CInt} deriving (Eq,Ord)
-cv8UC1 = CMatType 0
+cv_8UC1 = CMatType 0
+cv_8SC1 = CMatType 1
+cv_16UC1 = CMatType 2
+cv_16SC1 = CMatType 3
+cv_32SC1 = CMatType 4
+cv_32FC1 = CMatType 5
+cv_64FC1 = CMatType 6
 
 type GrayImage = MatT U8 C1
 
@@ -138,3 +143,8 @@ class Pixel a b where
   pixelAt :: Int -> Int -> MatT a b -> PixelType a b
   pixels :: MatT a b -> [[PixelType a b]]
   percentile :: Double -> MatT a b -> PixelType a b
+
+class (DepthType a, ChannelType b) => RandMat a b where
+  randMat :: Int -> Int -> IO (MatT a b) 
+
+

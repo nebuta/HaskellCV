@@ -13,6 +13,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import CV.Types
 import CV.FFI
+-- import CV.Instance
 
 import Data.ByteString (unpack)
 import Data.String
@@ -23,6 +24,15 @@ import Foreign.Marshal.Array (peekArray,advancePtr)
 import Foreign.Marshal.Alloc (free)
 import Foreign.C.Types
 import Foreign.Storable (peekElemOff)
+
+ci :: Int -> CInt
+ci = fromIntegral
+
+cd :: Double -> CDouble
+cd = realToFrac
+
+cf :: Double -> CFloat
+cf = realToFrac
 
 
 instance Eq (MatT a b) where
@@ -42,14 +52,9 @@ red = RGB 255 0 0
 blue = RGB 0 0 255
 green = RGB 0 255 0
 
-ci :: Int -> CInt
-ci = fromIntegral
 
-cd :: Double -> CDouble
-cd = realToFrac
-
-cf :: Double -> CFloat
-cf = realToFrac
+--Create mat
+--
 
 
 -- Matrix info
