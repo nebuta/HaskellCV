@@ -2,12 +2,11 @@
 //  draw.cpp
 //  HaskellCV
 //
-//  Created by Hiroyuki Kai on 8/31/12.
+//  Created by Hiroyuki Kai on 10/5/12.
 //  Copyright (c) 2012 Hiroyuki Kai. All rights reserved.
 //
-// OpenCV Haskell interface via FFI
 
-#include "mainlib.h"
+#include "draw.h"
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -15,12 +14,19 @@
 #include <map>
 
 extern "C" {
-    
-    using namespace std;
-    
-    
-    //ToDo: check if this is correct (*mat should not change)
-    Mat* m_circle(const Mat* mat, int* pos, int num, int radius, int isColor, int* color){
 
+#include "mainlib.h"
+    
+    using namespace cv;
+    using namespace std;
+
+    void m_circle(Mat* mat, int y, int x, int radius, int b, int g, int r, int thickness){
+        circle(*mat, Point(x,y), radius, Scalar(b,g,r),thickness,CV_AA);
+    }
+    void m_rectangle(Mat* mat, int y1, int x1, int y2, int x2, int b, int g, int r, int thickness){
+        rectangle(*mat, Point(x1,y1), Point(x2,y2), Scalar(b,g,r),thickness,CV_AA);
+    }
+    void m_line(Mat* mat, int y1, int x1, int y2, int x2, int b, int g, int r, int thickness){
+        line(*mat, Point(x1,y1), Point(x2,y2), Scalar(b,g,r),thickness,CV_AA);
     }
 }

@@ -44,7 +44,9 @@ extern "C" {
     }
     
     void showMat(Mat* mat){
-        imshow("showMat()",*mat);
+        string name = format("Mat: %p",mat);
+        namedWindow(name,CV_WINDOW_NORMAL);
+        imshow(name,*mat);
         waitKey();
     }
     

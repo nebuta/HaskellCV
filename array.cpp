@@ -18,6 +18,14 @@ extern "C" {
     using namespace cv;
     using namespace std;
     
+    // Creating and destroying Mat
+    
+    Mat* m_clone(Mat* mat){
+        Mat res = mat->clone();
+        Mat *ret = new Mat(res);
+        return ret;
+    }
+    
     //
     // Getting Mat info
     //
