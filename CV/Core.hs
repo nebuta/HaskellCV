@@ -60,6 +60,7 @@ addColor :: (RGBTRange a) => RGBT a -> RGBT a -> RGBT a
 addColor (RGBT r1 g1 b1) (RGBT r2 g2 b2) = RGBT (r1+r2) (g1+g2) (b1+b2)
 
 
+
 --Create mat
 --
 

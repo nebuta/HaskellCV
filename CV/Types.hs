@@ -143,8 +143,11 @@ type Angle = Double
 --ToDo: Make the value bounded 0-255 or polymorphic
 data RGB = RGB Int Int Int
 
-class (Num a) => RGBTRange a
-instance RGBTRange Word8
+class (Num a) => RGBTRange a where
+  validSum :: a -> a -> Bool
+
+instance RGBTRange Word8 where
+  validSum a b = ((fromIntegral a) :: Integer) + (fromIntegral b) < (fromIntegral (maxBound :: Word8))
 
 data RGBT a = RGBT a a a deriving (Show,Eq)
 

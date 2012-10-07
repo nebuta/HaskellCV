@@ -294,10 +294,24 @@ extern "C" {
     }
     
     int m_eq(Mat* a, Mat* b){
-        Mat res(a->size(),CV_8UC1);
+        Mat res;
+        assert(a->type()==b->type());
         compare(*a,*b,res,CMP_NE);
-        int count = countNonZero(res);
-        return (count == 0) ? 1 : 0;
+        if(res.channels()==1){
+            int count = countNonZero(res);
+            return (count == 0) ? 1 : 0;
+        }else{
+            vector<Mat> ms;
+            for(int i=0;i<res.channels();i++){
+                ms.push_back(Mat());
+            }
+            split(res,ms);
+            int count = 0;
+            for(int i=0;i<res.channels();i++){
+                count += countNonZero(ms.at(i));
+            }
+            return (count == 0) ? 1 : 0;
+        }
     }
     
     Mat* addWeighted(Mat* ma, double alpha, Mat* mb, double beta, double gamma) {
