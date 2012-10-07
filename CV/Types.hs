@@ -145,9 +145,11 @@ data RGB = RGB Int Int Int
 
 class (Num a) => RGBTRange a where
   validSum :: a -> a -> Bool
+  validSub :: a -> a -> Bool
 
 instance RGBTRange Word8 where
-  validSum a b = ((fromIntegral a) :: Integer) + (fromIntegral b) < (fromIntegral (maxBound :: Word8))
+  validSum a b = ((fromIntegral a) :: Integer) + (fromIntegral b) <= (fromIntegral (maxBound :: Word8))
+  validSub a b = ((fromIntegral a) :: Integer) - (fromIntegral b) >= (fromIntegral (minBound :: Word8))
 
 data RGBT a = RGBT a a a deriving (Show,Eq)
 
