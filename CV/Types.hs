@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, TypeSynonymInstances #-}
 
 module CV.Types where
 
@@ -7,10 +7,14 @@ import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.C -- get the C types
 import System.IO.Unsafe (unsafePerformIO)
 
+import Data.Word
+
 -- For MatT phantom types
 -- ToDo: AnyDepth, AnyChannel, AnyColor should only be used for a Mat returned from readImg 
+-- ToDo: Make these type synonims of Word8, etc.
+
 data AnyDepth
-data U8 
+type U8 = Word8
 data S8 
 data U16
 data S16
@@ -136,7 +140,13 @@ instance Positional Coord where
 
 type Angle = Double
 
+--ToDo: Make the value bounded 0-255 or polymorphic
 data RGB = RGB Int Int Int
+
+class (Num a) => RGBTRange a
+instance RGBTRange Word8
+
+data RGBT a = RGBT a a a deriving (Show,Eq)
 
 class Pixel a b where
   type PixelType a b :: *

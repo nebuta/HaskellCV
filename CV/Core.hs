@@ -25,7 +25,9 @@ import Foreign.Marshal.Alloc (free)
 import Foreign.C.Types
 import Foreign.Storable (peekElemOff)
 
-ci :: Int -> CInt
+import Data.Word
+
+ci :: (Integral a)=> a -> CInt
 ci = fromIntegral
 
 cd :: Double -> CDouble
@@ -53,10 +55,20 @@ blue = RGB 0 0 255
 green = RGB 0 255 0
 
 
+-- Stub: does not consider overflow
+addColor :: (RGBTRange a) => RGBT a -> RGBT a -> RGBT a
+addColor (RGBT r1 g1 b1) (RGBT r2 g2 b2) = RGBT (r1+r2) (g1+g2) (b1+b2)
+
+
 --Create mat
 --
 
-
+monoColor :: Int -> Int -> RGBT U8 -> MatT U8 C3BGR
+monoColor h w (RGBT r g b)
+  = unsafePerformIO $ do
+      mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
+      mat <- newForeignPtr cmatFree mat_ptr
+      return (MatT mat)
 -- Matrix info
 --
 
@@ -148,12 +160,7 @@ cvAbs (MatT m) =
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
-monoColor :: Int -> Int -> RGB -> MatT U8 C3BGR
-monoColor h w (RGB r g b)
-  = unsafePerformIO $ do
-      mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
-      mat <- newForeignPtr cmatFree mat_ptr
-      return (MatT mat)
+
 
 showMatT :: MatT a b -> IO ()
 showMatT (MatT m) = do
