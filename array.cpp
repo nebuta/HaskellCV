@@ -13,7 +13,7 @@
 #include <map>
 
 extern "C" {
-    #include "mainlib.h"
+#include "mainlib.h"
     
     using namespace cv;
     using namespace std;
@@ -27,45 +27,74 @@ extern "C" {
     }
     
     extern "C++" {
-        template <typename T> void fillMatRandFloat(Mat *mat, T min, T max){
-            for(int y=0; y < mat->rows; y++){
-                for(int x=0; x < mat->rows; x++){
-                    mat->at<T>(y,x) = min+(T)rand()/((T)RAND_MAX/(max-min));
+        template <typename T> void fillMatRandFloat(Mat *mat, T min, T max,
+                                                    int fromKey = 0, unsigned int key=0){
+            if(fromKey){
+                srand(key);
+                for(int y=0; y < mat->rows; y++){
+                    for(int x=0; x < mat->rows; x++){
+                        mat->at<T>(y,x) = min+(T)rand()/((T)RAND_MAX/(max-min));
+                    }
+                }
+                srand(time(NULL));
+            }else{
+                for(int y=0; y < mat->rows; y++){
+                    for(int x=0; x < mat->rows; x++){
+                        mat->at<T>(y,x) = min+(T)rand()/((T)RAND_MAX/(max-min));
+                    }
                 }
             }
         }
-        template <typename T> void fillMatRandInt(Mat *mat, T min, T max){
-            for(int y=0; y < mat->rows; y++){
-                for(int x=0; x < mat->rows; x++){
-                    mat->at<T>(y,x) = min+(T)rand()%(max-min+1);
+        template <typename T> void fillMatRandInt(Mat *mat, T min, T max,
+                                                  int fromKey = 0, unsigned int key=0){
+            if(fromKey){
+                srand(key);
+                for(int y=0; y < mat->rows; y++){
+                    for(int x=0; x < mat->rows; x++){
+                        mat->at<T>(y,x) = min+(T)rand()%(max-min+1);
+                    }
+                }
+                srand(time(NULL));
+            }else{
+                for(int y=0; y < mat->rows; y++){
+                    for(int x=0; x < mat->rows; x++){
+                        mat->at<T>(y,x) = min+(T)rand()%(max-min+1);
+                    }
                 }
             }
         }
     }
     
-    Mat* m_randMat(int type, int rows, int cols){
+    Mat* m_randMat(int type, int rows, int cols, int fromKey, unsigned int key){
+        static bool firstInvoke = true;
+        
+        if(firstInvoke){
+            firstInvoke = false;
+            srand(time(NULL));
+        }
+        
         Mat *mat = new Mat(type,rows,cols);
         switch(mat->depth()){
             case CV_8U:
-                fillMatRandInt<uchar>(mat,0,UCHAR_MAX);
+                fillMatRandInt<uchar>(mat,0,UCHAR_MAX,fromKey,key);
                 break;
             case CV_8S:
-                fillMatRandInt<char>(mat,CHAR_MIN,CHAR_MAX);
+                fillMatRandInt<char>(mat,CHAR_MIN,CHAR_MAX,fromKey,key);
                 break;
             case CV_16U:
-                fillMatRandInt<uint16_t>(mat,0,UINT16_MAX);
+                fillMatRandInt<uint16_t>(mat,0,UINT16_MAX,fromKey,key);
                 break;
             case CV_16S:
-                fillMatRandInt<int16_t>(mat,INT16_MIN,INT16_MAX);
+                fillMatRandInt<int16_t>(mat,INT16_MIN,INT16_MAX,fromKey,key);
                 break;
             case CV_32S:
-                fillMatRandInt<int32_t>(mat,INT32_MIN,INT32_MAX);
+                fillMatRandInt<int32_t>(mat,INT32_MIN,INT32_MAX,fromKey,key);
                 break;
             case CV_32F:
-                fillMatRandFloat<float>(mat,0,1);
+                fillMatRandFloat<float>(mat,0,1,fromKey,key);
                 break;
             case CV_64F:
-                fillMatRandFloat<double>(mat,0,1);
+                fillMatRandFloat<double>(mat,0,1,fromKey,key);
                 break;
                 
         }
@@ -90,7 +119,7 @@ extern "C" {
     int m_cols(Mat* mat){
         return mat->cols;
     }
-
+    
     int m_type(Mat* mat){
         return mat->type();
     }
@@ -133,7 +162,7 @@ extern "C" {
             default:
                 break;
         }
-   //     printf("#%d %d %d\n",y,x,ret);
+        //     printf("#%d %d %d\n",y,x,ret);
         return ret;
     }
     
@@ -182,15 +211,15 @@ extern "C" {
     
     extern "C++" {
         template <typename T> T** valPtr(Mat* mat){
-                int channels = mat->channels();
-                int nRows = mat->rows * channels;
-                T** ps = new T*[nRows];
-                
-                for( int i = 0; i < nRows; ++i)
-                {
-                    ps[i] = mat->ptr<T>(i);
-                }
-                return ps;
+            int channels = mat->channels();
+            int nRows = mat->rows * channels;
+            T** ps = new T*[nRows];
+            
+            for( int i = 0; i < nRows; ++i)
+            {
+                ps[i] = mat->ptr<T>(i);
+            }
+            return ps;
         }
     }
     
@@ -210,7 +239,7 @@ extern "C" {
         else
             return valPtr<char>(mat);
     }
-
+    
     uint16_t** m_valsU16(Mat* mat)
     {
         if (mat->depth() != CV_16U)
@@ -326,10 +355,10 @@ extern "C" {
     //
     
     Mat* m_compare(Mat* a, Mat* b, int code){
- //                 printf("m_compare() start.\n");
+        //                 printf("m_compare() start.\n");
         Mat *res = new Mat();
         compare(*a,*b,*res,code);
- //                  printf("m_compare() end.%p %p %p\n",a,b,res);
+        //                  printf("m_compare() end.%p %p %p\n",a,b,res);
         return res;
     }
     
@@ -356,14 +385,14 @@ extern "C" {
                 ret[i+1+len] = xs.at(i);
                 sum += ret[i+1] + ret[i+1+len];
             }
-  //          printf("%d non-zero elems. sum=%d\n",len,sum);
+            //          printf("%d non-zero elems. sum=%d\n",len,sum);
             return ret;
         }
     }
     
     //Only supports single channel image for now
     int* m_findNonZero(Mat *mat) {
-//          puts("m_findNonZero() start.");
+        //          puts("m_findNonZero() start.");
         if (mat->channels() != 1)
             return NULL;
         else {
@@ -393,11 +422,11 @@ extern "C" {
                 default:
                     ret = NULL;
             }
-  //          puts("m_findNonZero() end.");
+            //          puts("m_findNonZero() end.");
             return ret;
         }
     }
-
+    
     //
     // Statistics and histogram
     //
@@ -405,10 +434,10 @@ extern "C" {
     double m_mean(Mat* mat){
         return cv::mean(*mat)[0];
     }
-
+    
     //For now, only single channel images
     int* m_hist(int channel, int numBins, float min, float max, Mat* mat){
-//        puts("m_hist() start.");
+        //        puts("m_hist() start.");
         int histSize[] = {numBins};
         float range[] = { min, max };
         const float* ranges[] = { range };
@@ -422,18 +451,18 @@ extern "C" {
                  false );
         Mat histi;
         hist->convertTo(histi, CV_32S);
- //       puts("m_hist() end.");
+        //       puts("m_hist() end.");
         return histi.ptr<int>();
     }
     
-
+    
     //Only C1 images
-
+    
     int m_percentileInt(double percentile, Mat* mat){
         //check if this is okay.
         Mat linear;
         int ret;
-
+        
         if(mat->isContinuous() && mat->channels() == 1 && percentile >= 0 && percentile <= 100){
             linear = mat->reshape(0,1);
             Mat sorted;
@@ -484,6 +513,6 @@ extern "C" {
             throw Exception();
         }
     }
-
+    
 }
 

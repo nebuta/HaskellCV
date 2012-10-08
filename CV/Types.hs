@@ -160,6 +160,7 @@ class Pixel a b where
   percentile :: Double -> MatT a b -> PixelType a b
 
 class (DepthType a, ChannelType b) => RandMat a b where
-  randMat :: Int -> Int -> IO (MatT a b) 
+  randMat :: Int -> Int -> IO (MatT a b)
+  randMatFromKey :: Word8 -> Int -> Int -> MatT a b  -- Deterministic pseudo random.
 
 

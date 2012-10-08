@@ -71,6 +71,7 @@ monoColor h w (RGBT r g b)
       mat_ptr <- c_monoColor (ci w) (ci h) (ci b) (ci g) (ci r)
       mat <- newForeignPtr cmatFree mat_ptr
       return (MatT mat)
+
 -- Matrix info
 --
 
