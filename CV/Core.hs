@@ -48,11 +48,11 @@ instance Eq (MatT a b) where
           return (is_eq /= ci 0)
 
 
-yellow, red, blue, green :: RGB
-yellow = RGB 255 255 0
-red = RGB 255 0 0
-blue = RGB 0 0 255
-green = RGB 0 255 0
+yellow, red, blue, green :: RGBT U8
+yellow = RGBT 255 255 0
+red = RGBT 255 0 0
+blue = RGBT 0 0 255
+green = RGBT 0 255 0
 
 
 -- Stub: does not consider overflow
@@ -164,11 +164,16 @@ cvAbs (MatT m) =
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
 
-
 showMatT :: MatT a b -> IO ()
 showMatT (MatT m) = do
   withForeignPtr m $ \mm -> do
-    c_showMat mm
+    c_showMat mm 0
+
+showMatT' :: MatT a b -> Int -> IO ()
+showMatT' (MatT m) delay = do
+  withForeignPtr m $ \mm -> do
+    c_showMat mm (ci delay)
+
 
 -- addWeighted :: Mat -> Double -> Mat -> Double -> Double -> Mat
 -- addWeighted (Mat ma) alpha (Mat mb) beta gamma = fromId $ c_addWeighted (ci ma) (cd alpha) (ci mb) (cd beta) (cd gamma)
@@ -249,5 +254,18 @@ findNonZero (MatT m) = unsafePerformIO $ do
     cx <- fmap (map fromIntegral) $ peekArray len (advancePtr ptr (len+1))
     free ptr
     return (zipWith Coord cy cx)
-    
-  
+
+newVideo :: FilePath -> VideoCodec -> Double -> Int -> Int -> IO VideoWriter
+newVideo path codec fps height width = do
+  withCString path $ \path_str -> do
+    withCString (unCodec codec) $ \codec_str -> do
+      vw_ptr <- c_newVideoWriter path_str codec_str (cd fps) (ci height) (ci width)
+      vw <- newForeignPtr cvideoWriterFree vw_ptr
+      return (VideoWriter vw)
+
+addFrame :: VideoWriter -> MatT a b -> IO ()
+addFrame (VideoWriter v) (MatT m) = do
+  -- ToDo: check the dimension matching
+  withForeignPtr m $ \mm -> do
+    withForeignPtr v $ \vv -> do
+      c_videoWrite vv mm

@@ -43,11 +43,12 @@ extern "C" {
         return mat;
     }
     
-    void showMat(Mat* mat){
+    void showMat(Mat* mat, int delay){
         string name = format("Mat: %p",mat);
         namedWindow(name,CV_WINDOW_NORMAL);
         imshow(name,*mat);
-        waitKey();
+        waitKey(delay);
+        destroyWindow(name);
     }
     
     //ToDo: Is this way of allocation okay?

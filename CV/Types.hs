@@ -92,6 +92,7 @@ instance ChannelC3 C3Lab
 
 data CMat -- Mat type in C++ OpenCV
 data CScalar -- Scalar type in C++ OpenCV
+data CVideoWriter  -- VideoWriter in OpenCV
 
 data CFilterEngine
 data FilterEngine = FilterEngine !(ForeignPtr CFilterEngine)
@@ -161,6 +162,12 @@ class Pixel a b where
 
 class (DepthType a, ChannelType b) => RandMat a b where
   randMat :: Int -> Int -> IO (MatT a b)
-  randMatFromKey :: Word8 -> Int -> Int -> MatT a b  -- Deterministic pseudo random.
+  randMatFromKey :: Word32 -> Int -> Int -> MatT a b  -- Deterministic pseudo random.
 
 
+data VideoWriter = VideoWriter !(ForeignPtr CVideoWriter)
+data VideoCodec = MPEG1 | MJPEG
+
+unCodec :: VideoCodec -> String
+unCodec MPEG1 = "PIM1"
+unCodec MJPEG = "MJPG"

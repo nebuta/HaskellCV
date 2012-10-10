@@ -108,6 +108,21 @@ extern "C" {
         return ret;
     }
     
+    //Mat I/O from/to files
+    VideoWriter* m_newVideoWriter(char* name, char* codec, double fps, int height, int width){
+        int codec_val = CV_FOURCC(codec[0],codec[1],codec[2],codec[3]);
+        VideoWriter* vw = new VideoWriter(name,codec_val,fps,Size(width,height));
+        return vw;
+    }
+    
+    void m_videoWrite(VideoWriter* vw, Mat* mat){
+        vw->write(*mat);
+    }
+    
+    void videoWriterFree(VideoWriter* vw){
+        delete vw;
+    }
+    
     //
     // Getting Mat info
     //

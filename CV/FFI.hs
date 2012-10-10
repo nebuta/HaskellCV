@@ -13,11 +13,18 @@ foreign import ccall "m_newMat" c_newMat :: CInt -> CInt -> CInt -> IO (Ptr CMat
 foreign import ccall "m_randMat" c_randMat :: CInt -> CInt -> CInt -> CInt -> CUInt -> IO (Ptr CMat)
 foreign import ccall "m_clone" c_clone :: Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
-
-
-foreign import ccall "showMat" c_showMat :: Ptr CMat -> IO ()
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
 
+-- Image I/O
+foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
+foreign import ccall "showMat" c_showMat :: Ptr CMat -> CInt -> IO ()
+
+-- Video I/O
+foreign import ccall "m_newVideoWriter" c_newVideoWriter :: CString -> CString -> CDouble -> CInt -> CInt -> IO (Ptr CVideoWriter)
+foreign import ccall "&videoWriterFree" cvideoWriterFree :: FunPtr(Ptr CVideoWriter->IO())
+foreign import ccall "m_videoWrite" c_videoWrite:: Ptr CVideoWriter -> Ptr CMat -> IO ()
+
+-- Get  value
 foreign import ccall "m_pixelIntAt" c_pixelIntAt :: CInt -> CInt -> Ptr CMat -> IO CInt
 foreign import ccall "m_pixelFloatAt" c_pixelFloatAt :: CInt -> CInt -> Ptr CMat -> IO CFloat
 foreign import ccall "m_pixelDoubleAt" c_pixelDoubleAt :: CInt -> CInt -> Ptr CMat -> IO CDouble
@@ -56,7 +63,6 @@ foreign import ccall "addWeighted" c_addWeighted :: Ptr CMat -> CDouble -> Ptr C
 foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat) 
 
 -- image operations
-foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
 foreign import ccall "cvtColor" c_cvtColor :: CInt -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_changeDepth" c_changeDepth :: CInt -> Ptr CMat -> IO (Ptr CMat)
 

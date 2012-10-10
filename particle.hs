@@ -10,17 +10,18 @@ import Debug.Trace (trace,traceShow)
 
 import Control.Concurrent (forkIO)
 
+import Text.Printf
+
 findParticles :: GrayImage -> [Pos]
 findParticles = detect . prefilter
   where prefilter = gauss (fromIntegral minDist)
 
 minDist = 3 :: Int
 
-
 detect :: GrayImage -> [Pos]
 detect img = refinePos $ filterThresAndDist minInt (fromIntegral minDist) img $ findIndexMat cmpEqual img dilated
   where
-    perc = 20.0   -- in %
+    perc = 10.0   -- in %
     minInt = fromIntegral $ percentile perc img
     dilated = dilate (fromStrEl (Ellipse minDist minDist)) img
 
@@ -61,17 +62,29 @@ addFrameIdx pss = zipWith f [0..length pss-1] pss
     f i ps = map (g i) ps
     g i (Pos x y) = Pos3D i x y
 
-main = maintrue 0
+filename :: Int -> String
+filename n = "./img/cell"++printf "%03d" n++".jpg"
 
-maintrue :: Int -> IO ()
-maintrue n = do
-  img <- readImg "cell.jpg"
+main :: IO ()
+main = do
+  first <- readImg $ filename 1
+  vw <- newVideo "out.mpg" MPEG1 30 (numRows first) (numCols first)
+  pss <- mapM_ (processOneFrame vw) [1..600]
+  return ()
+
+processOneFrame :: VideoWriter -> Int -> IO [Pos]
+processOneFrame vw n = do 
+  img <- readImg (filename n)
+  putStrLn $ "Frame: " ++ show n
   let ps = findParticles (convert img)
   let coords = map roundPos ps
   let out = draw img (map (\x-> Circle x 1 red (-1)) coords)
-  showMatT out
+  addFrame vw out
   print (n,(length ps))
-  return ()
+  return ps
+
+
+
 
 roundPos :: Pos -> Coord
 roundPos (Pos y x) = Coord (round y) (round x)

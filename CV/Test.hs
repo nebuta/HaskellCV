@@ -5,6 +5,10 @@ module CV.Test where
 import Test.QuickCheck
 import CV
 import System.IO.Unsafe (unsafePerformIO)
+import Control.Applicative
+
+instance Arbitrary (MatT U8 C1) where
+  arbitrary = randMatFromKey <$> arbitrary <*> choose (1,1000) <*> choose (1,1000)
 
 instance Arbitrary (RGBT U8) where
   arbitrary = do
@@ -19,8 +23,7 @@ prop_eqToSelf a =
         h <- choose (1,1000)
         w <- choose (1,1000)
         return (h,w)) $ \(h,w) -> monoColor h w a == monoColor h w a
-
-prop_randMatFromKey :: Property
+ 
 prop_randMatFromKey =
   forAll (do
     h <- choose (1,1000)
