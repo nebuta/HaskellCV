@@ -14,7 +14,9 @@
 
 extern "C" {
     #include "mainlib.h"
-    
+    #include <climits>
+    #include <cstdlib>
+    #include <cstdio>
     using namespace cv;
     using namespace std;
     
@@ -53,13 +55,13 @@ extern "C" {
                 fillMatRandInt<char>(mat,CHAR_MIN,CHAR_MAX);
                 break;
             case CV_16U:
-                fillMatRandInt<uint16_t>(mat,0,UINT16_MAX);
+                fillMatRandInt<uint16_t>(mat,0,USHRT_MAX);
                 break;
             case CV_16S:
-                fillMatRandInt<int16_t>(mat,INT16_MIN,INT16_MAX);
+                fillMatRandInt<int16_t>(mat,SHRT_MIN,SHRT_MAX);
                 break;
             case CV_32S:
-                fillMatRandInt<int32_t>(mat,INT32_MIN,INT32_MAX);
+                fillMatRandInt<int32_t>(mat,INT_MIN,INT_MAX);
                 break;
             case CV_32F:
                 fillMatRandFloat<float>(mat,0,1);
