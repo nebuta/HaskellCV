@@ -384,7 +384,7 @@ extern "C" {
             vector<int> ys;
             vector<int> xs;
             for(int y=0; y < mat->rows; y++){
-                for(int x=0; x < mat->rows; x++){
+                for(int x=0; x < mat->cols; x++){
                     if(mat->at<T>(y,x)!=0){
                         ys.push_back(y);
                         xs.push_back(x);
@@ -529,5 +529,63 @@ extern "C" {
         }
     }
     
+    // Detect max points
+    // the same as imregionalmax in Matlab
+    // Now only 8-connected
+    // Only C1 image
+    // Only 2D image for now.
+    
+    extern "C++" {
+        template <class T> inline Mat* findRegionalMax(Mat& m) {
+            int numRows = m.rows;
+            int numCols = m.cols;
+      //      printf("size: (%d,%d)\n",numRows,numCols);
+            Mat mat = Mat::zeros(numRows,numCols,CV_8UC1);
+            for(int i=1;i<numRows-1;i++){
+                for(int j=1;j<numCols-1;j++){
+                    if(
+                       //m.at<T>(i,j) >= m.at<T>(i-1,j-1) &&
+                       m.at<T>(i,j) >= m.at<T>(i-1,j) &&
+                       //m.at<T>(i,j) >= m.at<T>(i-1,j+1) &&
+                       m.at<T>(i,j) >= m.at<T>(i,j-1) &&
+                       m.at<T>(i,j) >= m.at<T>(i,j+1) &&
+                       //m.at<T>(i,j) >= m.at<T>(i+1,j-1) &&
+                       m.at<T>(i,j) >= m.at<T>(i+1,j)
+                       //&&m.at<T>(i,j) >= m.at<T>(i+1,j+1)
+                       ){
+                        mat.at<T>(i,j) = 1;
+                    }
+                }
+            }
+            Mat* ret = new Mat(mat);
+            return ret;
+        }
+    }
+    
+    Mat* regionalMax(Mat *mat){
+        if(mat->isContinuous() && mat->channels() == 1 && mat->dims == 2){
+            switch(mat->depth()){
+                case CV_8U:
+                    return findRegionalMax<uchar>(*mat);
+                case CV_8S:
+                    return findRegionalMax<char>(*mat);
+                case CV_16U:
+                    return findRegionalMax<ushort>(*mat);
+                case CV_16S:
+                    return findRegionalMax<short>(*mat);
+                case CV_32S:
+                    return findRegionalMax<int>(*mat);
+                case CV_32F:
+                    return findRegionalMax<float>(*mat);
+                case CV_64F:
+                    return findRegionalMax<double>(*mat);
+                default:
+                    return NULL;
+            }
+
+        }else{
+            throw Exception();
+        }
+    }
 }
 

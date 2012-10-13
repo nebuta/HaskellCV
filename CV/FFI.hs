@@ -55,9 +55,11 @@ foreign import ccall "m_div" c_divMat :: Ptr CMat -> Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "m_divNum" c_divNum :: Ptr CMat -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_eq" c_eqMat :: Ptr CMat -> Ptr CMat -> IO CInt
 
+
+-- Search and histogram
 foreign import ccall "m_compare" c_compare :: Ptr CMat -> Ptr CMat -> CInt -> IO (Ptr CMat)
 foreign import ccall "m_findNonZero" c_findNonZero :: Ptr CMat -> IO (Ptr CInt)
-
+foreign import ccall "regionalMax" c_regionalMax :: Ptr CMat -> IO (Ptr CMat)
 
 foreign import ccall "addWeighted" c_addWeighted :: Ptr CMat -> CDouble -> Ptr CMat -> CDouble -> CDouble -> IO (Ptr CMat)
 foreign import ccall "m_abs" c_abs :: Ptr CMat -> IO (Ptr CMat) 

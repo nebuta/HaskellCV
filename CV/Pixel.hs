@@ -12,7 +12,11 @@ import System.IO.Unsafe (unsafePerformIO)
 import Foreign.ForeignPtr.Safe (withForeignPtr)
 import Foreign.Marshal.Array (peekArray,advancePtr)
 import Foreign.Marshal.Alloc (free)
+import Foreign.Ptr
+import Foreign.Storable
 
+import Data.Word
+import Data.Int
 
 --
 -- Get pixel(s)
@@ -20,74 +24,96 @@ import Foreign.Marshal.Alloc (free)
 
 -- ToDo: Design multi-channel support 
 
-
-
 instance Pixel U8 C1 where
-  type PixelType U8 C1 = Int
+  type PixelType U8 C1 = Word8
   pixels = pixelsU8
-  pixelAt = pixelAtInt
-  percentile = percentileInt
+  pixelAt y x = fromIntegral . pixelAtInt y x-- Stub: this conversion makes slow.
+  percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel S8 C1 where
-  type PixelType S8 C1 = Int
+  type PixelType S8 C1 = Int8
   pixels = pixelsS8
-  pixelAt = pixelAtInt
-  percentile = percentileInt
+  pixelAt y x = fromIntegral . pixelAtInt y x
+  percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel U16 C1 where
-  type PixelType U16 C1 = Int
+  type PixelType U16 C1 = Word16
   pixels = pixelsU16
-  pixelAt = pixelAtInt
-  percentile = percentileInt
+  pixelAt y x = fromIntegral . pixelAtInt y x
+  percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel S16 C1 where
-  type PixelType S16 C1 = Int
+  type PixelType S16 C1 = Int16
   pixels = pixelsS16
-  pixelAt = pixelAtInt
-  percentile = percentileInt
+  pixelAt y x = fromIntegral . pixelAtInt y x
+  percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel S32 C1 where
-  type PixelType S32 C1 = Int
+  type PixelType S32 C1 = Int32
   pixels = pixelsS32
-  pixelAt = pixelAtInt
-  percentile = percentileInt
+  pixelAt y x = fromIntegral . pixelAtInt y x
+  percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel F32 C1 where
   type PixelType F32 C1 = Float
   pixels = pixelsF32
-  pixelAt = pixelAtFloat
-  percentile p = realToFrac . percentileFloat p
+  pixelAt y x = pixelAtFloat y x
+  percentile = percentileGeneral c_percentileFloat realToFrac
 
 instance Pixel F64 C1 where
   type PixelType F64 C1 = Double
   pixels = pixelsF64
-  pixelAt = pixelAtDouble
-  percentile = percentileFloat
+  pixelAt y x = pixelAtDouble y x
+  percentile = percentileGeneral c_percentileFloat realToFrac
+
+-- More instances for C2, C3, etc.
 
 --ToDo: check if this is correct.
-pixelsU8 :: (ChannelC1 b) => MatT U8 b -> [[Int]]   --Single channel
-pixelsU8 mat@(MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    let nr = (numRows mat)
-    let nc = (numCols mat)
-    pp <- c_valsU8 mm    --Only uchar!!!!!
-    row_ptrs <- peekArray nr pp
-    val <- mapM (peekArray nc) row_ptrs
-    free pp  --ToDo: Is this good?
-    return $ map (map fromIntegral) val
 
-pixelsS8 :: (ChannelC1 b) => MatT S8 b -> [[Int]]   --Single channel
-pixelsS8 mat@(MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    let nr = (numRows mat)
-    let nc = (numCols mat)
-    pp <- c_valsS8 mm 
-    row_ptrs <- peekArray nr pp
-    val <- mapM (peekArray nc) row_ptrs
-    free pp  --ToDo: Is this good?
-    return $ map (map fromIntegral) val
+pixelsGeneral :: (Storable c) => (Ptr CMat -> IO (Ptr (Ptr c))) -> (c->PixelType a b) -> MatT a b -> [[PixelType a b]]
+pixelsGeneral func conv mat@(MatT m) = 
+        unsafePerformIO $ do
+          withForeignPtr m $ \mm -> do
+            let nr = (numRows mat)
+            let nc = (numCols mat)
+            pp <- func mm 
+            row_ptrs <- peekArray nr pp
+            val <- mapM (peekArray nc) row_ptrs
+            free pp  --ToDo: Is this good?
+            return $ map (map conv) val
 
-pixelsU16 :: (ChannelC1 b) => MatT U16 b -> [[Int]]   --Single channel
+-- pixelsS8 :: MatT S8 C1 -> [[PixelType S8 C1]]   --Single channel
+pixelsU8 = pixelsGeneral c_valsU8 fromIntegral
+pixelsS8 = pixelsGeneral c_valsS8 fromIntegral
+pixelsU16 = pixelsGeneral c_valsU16 fromIntegral
+pixelsS16 = pixelsGeneral c_valsS16 fromIntegral
+pixelsS32 = pixelsGeneral c_valsS32 fromIntegral
+pixelsF32 = pixelsGeneral c_valsF32 realToFrac
+pixelsF64 = pixelsGeneral c_valsF64 realToFrac
+
+
+percentileGeneral func conv perc (MatT m)
+  = unsafePerformIO $ do
+      withForeignPtr m $ \mm -> do
+        val <- func (cd perc) mm
+        return (conv val)
+
+percentileInt :: (DepthInt a) => Double -> MatT a b -> Int
+percentileInt perc (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_percentileInt (cd perc) mm
+    return (fromIntegral val)
+
+percentileFloat :: (DepthFloat a) => Double -> MatT a b -> Double
+percentileFloat perc (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    val <- c_percentileFloat (cd perc) mm
+    return (realToFrac val)
+
+
+
+{-
+pixelsU16 :: (ChannelC1 b) => MatT U16 b -> [[Word16]]   --Single channel
 pixelsU16 mat@(MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     let nr = (numRows mat)
@@ -98,7 +124,8 @@ pixelsU16 mat@(MatT m) = unsafePerformIO $ do
     free pp  --ToDo: Is this good?
     return $ map (map fromIntegral) val
 
-pixelsS16 :: (ChannelC1 b) => MatT S16 b -> [[Int]]   --Single channel
+
+pixelsS16 :: (ChannelC1 b) => MatT S16 b -> [[Int16]]   --Single channel
 pixelsS16 mat@(MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     let nr = (numRows mat)
@@ -109,7 +136,7 @@ pixelsS16 mat@(MatT m) = unsafePerformIO $ do
     free pp  --ToDo: Is this good?
     return $ map (map fromIntegral) val
 
-pixelsS32 :: (ChannelC1 b) => MatT S32 b -> [[Int]]   --Single channel
+pixelsS32 :: (ChannelC1 b) => MatT S32 b -> [[Int32]]   --Single channel
 pixelsS32 mat@(MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     let nr = (numRows mat)
@@ -142,7 +169,7 @@ pixelsF64 mat@(MatT m) = unsafePerformIO $ do
     val <- mapM (peekArray nc) row_ptrs
     free pp  --ToDo: Is this good?
     return (map (map realToFrac) val)
-
+-}
 
 --Single channel
 pixelAtInt  :: Int -> Int -> MatT a b -> Int

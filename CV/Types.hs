@@ -154,7 +154,7 @@ instance RGBTRange Word8 where
 
 data RGBT a = RGBT a a a deriving (Show,Eq)
 
-class Pixel a b where
+class (DepthType a, ChannelType b) => Pixel a b where
   type PixelType a b :: *
   pixelAt :: Int -> Int -> MatT a b -> PixelType a b
   pixels :: MatT a b -> [[PixelType a b]]

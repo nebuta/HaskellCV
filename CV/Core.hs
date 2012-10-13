@@ -212,19 +212,6 @@ histogram numBin min max (MatT m) = unsafePerformIO $ do
 
 
 
-percentileInt :: (DepthInt a) => Double -> MatT a b -> Int
-percentileInt perc (MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    val <- c_percentileInt (cd perc) mm
-    return (fromIntegral val)
-
-percentileFloat :: (DepthFloat a) => Double -> MatT a b -> Double
-percentileFloat perc (MatT m) = unsafePerformIO $ do
-  withForeignPtr m $ \mm -> do
-    val <- c_percentileFloat (cd perc) mm
-    return (realToFrac val)
-
-
 -- Comparison and search
 
 data CmpFun a b = CmpFun CInt | MyCmpFun (PixelType a b->PixelType a b->Bool)
@@ -254,6 +241,15 @@ findNonZero (MatT m) = unsafePerformIO $ do
     cx <- fmap (map fromIntegral) $ peekArray len (advancePtr ptr (len+1))
     free ptr
     return (zipWith Coord cy cx)
+
+regionalMax :: MatT a C1 -> MatT U8 C1
+regionalMax (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    ptr <- c_regionalMax mm
+    mat <- newForeignPtr cmatFree ptr
+    return (MatT mat)
+
+-- Video I/O
 
 newVideo :: FilePath -> VideoCodec -> Double -> Int -> Int -> IO VideoWriter
 newVideo path codec fps height width = do
