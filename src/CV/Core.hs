@@ -27,6 +27,7 @@ import Foreign.Storable (peekElemOff)
 
 import Data.Word
 
+-- * Internal
 ci :: (Integral a)=> a -> CInt
 ci = fromIntegral
 
@@ -36,6 +37,7 @@ cd = realToFrac
 cf :: Double -> CFloat
 cf = realToFrac
 
+type IsoFilter a b = MatT a b -> MatT a b
 
 instance Eq (MatT a b) where
   (MatT a) == (MatT b) = unsafePerformIO $ do
@@ -48,12 +50,14 @@ instance Eq (MatT a b) where
           return (is_eq /= ci 0)
 
 
+-- * Predefined colors
 yellow, red, blue, green :: RGBT U8
 yellow = RGBT 255 255 0
 red = RGBT 255 0 0
 blue = RGBT 0 0 255
 green = RGBT 0 255 0
 
+-- * Color arithmetic
 
 -- Stub: does not consider overflow
 addColor :: (RGBTRange a) => RGBT a -> RGBT a -> RGBT a
@@ -62,6 +66,7 @@ addColor (RGBT r1 g1 b1) (RGBT r2 g2 b2) = RGBT (r1+r2) (g1+g2) (b1+b2)
 subColor :: (RGBTRange a) => RGBT a -> RGBT a -> RGBT a
 subColor (RGBT r1 g1 b1) (RGBT r2 g2 b2) = RGBT (r1-r2) (g1-g2) (b1-b2)
 
+-- * Create matrix
 --Create mat
 --
 
@@ -72,6 +77,8 @@ monoColor h w (RGBT r g b)
       mat <- newForeignPtr cmatFree mat_ptr
       return (MatT mat)
 
+
+-- * Get dimensions and other info
 -- Matrix info
 --
 
@@ -101,6 +108,7 @@ numChannels (MatT m) = unsafePerformIO $ do
       num <- c_channels mm
       return (fromIntegral num)
 
+-- * Matrix arithmetic
 -- |Element-wise absolute value
 cvAbs :: MatT a b -> MatT a b
 cvAbs (MatT m) =
@@ -160,6 +168,16 @@ cvAbs (MatT m) =
           mat <- newForeignPtr cmatFree mat_ptr
           return (MatT mat)
 
+
+-- |Crop matrix
+crop :: MatT a b -> Int -> Int -> Int -> Int -> MatT a b
+crop (MatT a) x y w h
+  = unsafePerformIO $ do
+      withForeignPtr a $ \aa -> do
+        mat_ptr <- c_crop aa (ci x) (ci y) (ci w) (ci h)
+        mat <- newForeignPtr cmatFree mat_ptr
+        return (MatT mat)
+
 -- blend :: Mat -> Mat -> Mat
 -- blend (Mat a) (Mat b) = Mat $ fromIntegral $ c_addMat (fromIntegral a) (fromIntegral b)
 
@@ -180,22 +198,18 @@ showMatT' (MatT m) delay = do
 
 -- Image operations
 
-readImg :: FilePath -> IO (MatT AnyDepth AnyChannel)    --ToDo: Consider if AnyDepth and AnyChannel is good, or I should use polymorphic types as a b
-readImg file = do
-  withCString file $ \cstr_path -> do
-    mat_ptr <- c_readImg cstr_path
-    mat <- newForeignPtr cmatFree mat_ptr 
-    return $ MatT mat
+
 
 -- Histogram and statistics
 --
 
--- Histogram functions
+-- * Histogram and statistics
 --
 type BinMin = Double
 type BinMax = Double
 type Frequency = Int
 data Histogram = Histogram [(BinMin,BinMax,Frequency)] deriving Show
+
 
 -- |Calculate histogram.
 -- |Supports only C1 images for now.
@@ -212,7 +226,15 @@ histogram numBin min max (MatT m) = unsafePerformIO $ do
 
 
 
--- Comparison and search
+equalizeHist :: IsoFilter U8 C1
+equalizeHist (MatT m) = unsafePerformIO $ do
+  withForeignPtr m $ \mm -> do
+    mat_ptr <- c_equalizeHist mm
+    mat <- newForeignPtr cmatFree mat_ptr
+    return (MatT mat)
+
+
+-- * Comparison and search
 
 data CmpFun a b = CmpFun CInt | MyCmpFun (PixelType a b->PixelType a b->Bool)
 
@@ -242,14 +264,15 @@ findNonZero (MatT m) = unsafePerformIO $ do
     free ptr
     return (zipWith Coord cy cx)
 
-regionalMax :: MatT a C1 -> MatT U8 C1
+regionalMax :: MatT a C1 -> GrayImage
 regionalMax (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     ptr <- c_regionalMax mm
     mat <- newForeignPtr cmatFree ptr
     return (MatT mat)
 
--- Video I/O
+
+-- * Video I/O
 
 newVideo :: FilePath -> VideoCodec -> Double -> Int -> Int -> IO VideoWriter
 newVideo path codec fps height width = do

@@ -1,4 +1,9 @@
-module CV.Draw where
+module CV.Draw (
+  draw
+  , Radius
+  , Thickness
+  , Shape (..)
+) where
 
 import CV.Core
 import CV.Types

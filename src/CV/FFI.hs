@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface, EmptyDataDecls #-}
+{-# OPTIONS_HADDOCK hide #-}
 
 module CV.FFI where
 
@@ -14,6 +15,11 @@ foreign import ccall "m_randMat" c_randMat :: CInt -> CInt -> CInt -> CInt -> CU
 foreign import ccall "m_clone" c_clone :: Ptr CMat -> IO (Ptr CMat)
 foreign import ccall "&matFree" cmatFree :: FunPtr(Ptr CMat->IO())
 foreign import ccall "monoColor" c_monoColor :: CInt -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
+
+
+-- Crop, resize, etc.
+foreign import ccall "m_crop" c_crop :: Ptr CMat -> CInt -> CInt -> CInt -> CInt -> IO (Ptr CMat)
+
 
 -- Image I/O
 foreign import ccall "readImg" c_readImg :: CString -> IO (Ptr CMat)
@@ -44,6 +50,9 @@ foreign import ccall "m_rows" c_rows :: Ptr CMat -> IO CInt
 foreign import ccall "m_cols" c_cols :: Ptr CMat -> IO CInt
 
 foreign import ccall "m_hist" c_hist :: CInt -> CInt -> CFloat -> CFloat -> Ptr CMat -> IO (Ptr CInt) 
+foreign import ccall "m_equalizeHist" c_equalizeHist :: Ptr CMat -> IO (Ptr CMat) 
+
+
 
 foreign import ccall "m_percentileInt" c_percentileInt :: CDouble -> Ptr CMat -> IO CInt 
 foreign import ccall "m_percentileFloat" c_percentileFloat :: CDouble -> Ptr CMat -> IO CDouble
@@ -78,13 +87,14 @@ foreign import ccall "m_line" c_line :: Ptr CMat -> CInt -> CInt -> CInt -> CInt
 
 -- Filters
 
-foreign import ccall "f_gaussian" c_gaussian :: CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_boxFilter" c_boxFilter :: CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_derivFilter" c_derivFilter :: CInt -> CInt -> CInt -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_medianFilter" c_medianFilter :: CInt -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_laplacian" c_laplacian:: CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_bilateral" c_bilateral :: CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
-foreign import ccall "f_sobel" c_sobel :: CInt -> CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> IO (Ptr CMat)
+foreign import ccall "f_imadjust" c_imadjust :: CDouble -> CDouble -> CDouble -> CDouble -> Ptr CMat -> Int -> IO (Ptr CMat)
+foreign import ccall "f_gaussian" c_gaussian :: CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> Int -> IO (Ptr CMat)
+foreign import ccall "f_boxFilter" c_boxFilter :: CInt -> CInt -> Ptr CMat -> Int  -> IO (Ptr CMat)
+foreign import ccall "f_derivFilter" c_derivFilter :: CInt -> CInt -> CInt -> Ptr CMat -> Int -> IO (Ptr CMat)
+foreign import ccall "f_medianFilter" c_medianFilter :: CInt -> Ptr CMat -> Int  -> IO (Ptr CMat)
+foreign import ccall "f_laplacian" c_laplacian:: CInt -> CDouble -> CDouble -> Ptr CMat -> Int -> IO (Ptr CMat)
+foreign import ccall "f_bilateral" c_bilateral :: CInt -> CDouble -> CDouble -> Ptr CMat -> Int -> IO (Ptr CMat)
+foreign import ccall "f_sobel" c_sobel :: CInt -> CInt -> CInt -> CDouble -> CDouble -> Ptr CMat -> Int -> IO (Ptr CMat)
 
 
 -- Filters using mask

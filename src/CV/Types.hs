@@ -110,6 +110,7 @@ cv_32FC1 = CMatType 5
 cv_64FC1 = CMatType 6
 
 type GrayImage = MatT U8 C1
+type AnyImage = MatT AnyDepth AnyChannel
 
 type Iso a = a -> a
 
@@ -156,9 +157,11 @@ data RGBT a = RGBT a a a deriving (Show,Eq)
 
 class (DepthType a, ChannelType b) => Pixel a b where
   type PixelType a b :: *
+  type PixelType' a b :: *  -- For sumPiexls
   pixelAt :: Int -> Int -> MatT a b -> PixelType a b
   pixels :: MatT a b -> [[PixelType a b]]
   percentile :: Double -> MatT a b -> PixelType a b
+  sumPixels :: MatT a b -> PixelType' a b
 
 class (DepthType a, ChannelType b) => RandMat a b where
   randMat :: Int -> Int -> IO (MatT a b)

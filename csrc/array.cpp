@@ -442,6 +442,43 @@ extern "C" {
         }
     }
     
+    // Crop
+    Mat* m_crop(Mat* m,int x, int y, int width, int height){
+        cv::Rect roi = cv::Rect(x,y,width,height);
+        Mat *mat = new Mat((*m)(roi));
+        return mat;
+    }
+    
+    //
+    // Concat mat
+    //
+    /*
+    Mat* m_concat(Mat* a, Mat* b,int mode){
+        // mode: 0: horizontal, 1: vertical
+        if(a->type() != b->type())
+            return NULL;
+        if(mode==0 && a->rows!=b->rows)
+            return NULL;
+        if(mode==1 && a->cols!=b->cols)
+            return NULL;
+        Size2i size;
+        switch (mode) {
+            case 0:
+                size.width = a->cols + b->cols;
+                size.height = a->rows;
+                break;
+            case 1:
+                size.width = a->cols;
+                size.height = a->rows + b->cols;
+                break;
+            default:
+                return NULL;
+        }
+        Mat* m = new Mat(size,a->type());
+        a->copyTo
+        return m;
+    } */
+    
     //
     // Statistics and histogram
     //
@@ -544,16 +581,16 @@ extern "C" {
             for(int i=1;i<numRows-1;i++){
                 for(int j=1;j<numCols-1;j++){
                     if(
-                       //m.at<T>(i,j) >= m.at<T>(i-1,j-1) &&
-                       m.at<T>(i,j) >= m.at<T>(i-1,j) &&
-                       //m.at<T>(i,j) >= m.at<T>(i-1,j+1) &&
-                       m.at<T>(i,j) >= m.at<T>(i,j-1) &&
-                       m.at<T>(i,j) >= m.at<T>(i,j+1) &&
-                       //m.at<T>(i,j) >= m.at<T>(i+1,j-1) &&
-                       m.at<T>(i,j) >= m.at<T>(i+1,j)
-                       //&&m.at<T>(i,j) >= m.at<T>(i+1,j+1)
+                       m.at<T>(i,j) > m.at<T>(i-1,j-1) &&
+                       m.at<T>(i,j) > m.at<T>(i-1,j) &&
+                       m.at<T>(i,j) > m.at<T>(i-1,j+1) &&
+                       m.at<T>(i,j) > m.at<T>(i,j-1) &&
+                       m.at<T>(i,j) > m.at<T>(i,j+1) &&
+                       m.at<T>(i,j) > m.at<T>(i+1,j-1) &&
+                       m.at<T>(i,j) > m.at<T>(i+1,j)
+                       && m.at<T>(i,j) > m.at<T>(i+1,j+1)
                        ){
-                        mat.at<T>(i,j) = 1;
+                        mat.at<uchar>(i,j) = 1;
                     }
                 }
             }

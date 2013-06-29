@@ -26,12 +26,14 @@ import Data.Int
 
 instance Pixel U8 C1 where
   type PixelType U8 C1 = Word8
+  type PixelType' U8 C1 = Integer
   pixels = pixelsU8
   pixelAt y x = fromIntegral . pixelAtInt y x-- Stub: this conversion makes slow.
   percentile = percentileGeneral c_percentileInt fromIntegral
 
 instance Pixel S8 C1 where
   type PixelType S8 C1 = Int8
+  type PixelType' S8 C1 = Integer
   pixels = pixelsS8
   pixelAt y x = fromIntegral . pixelAtInt y x
   percentile = percentileGeneral c_percentileInt fromIntegral
@@ -109,8 +111,6 @@ percentileFloat perc (MatT m) = unsafePerformIO $ do
   withForeignPtr m $ \mm -> do
     val <- c_percentileFloat (cd perc) mm
     return (realToFrac val)
-
-
 
 {-
 pixelsU16 :: (ChannelC1 b) => MatT U16 b -> [[Word16]]   --Single channel

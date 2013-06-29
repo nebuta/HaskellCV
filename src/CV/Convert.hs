@@ -22,10 +22,12 @@ import Foreign.C -- get the C types
 -- Image color conversion
 --
 
+-- Code is listed in /usr/local/include/opencv2/imgproc/types_c.h
 newtype ConvertCode = ConvertCode {unConvertCode :: CInt}
 -- data ConvertCode = ConvertCode CInt
 bgrToGray = ConvertCode (ci 6)
 rgbToGray = ConvertCode (ci 7)
+grayToBGR = ConvertCode (ci 8)
 luvToBGR = ConvertCode (ci 58)
 
 newtype CDepth = CDepth {unDepth :: CInt}
@@ -52,16 +54,18 @@ cvtColor' (ConvertCode code) (MatT m)
         mat <- newForeignPtr cmatFree mat_ptr
         return (MatT mat)
 
--- conversion of depth
+-- |Conversion of depth
 class CvtDepth from to where
   cvtDepth :: MatT from a -> MatT to a
 
--- conversion of channels, keep depth (a)
+-- |Conversion of channels, keep depth (a)
 class CvtColor from to where
   cvtColor :: MatT a from -> MatT a to
 
+-- |Automatic conversion of depth and color. This may cause a runtime error when used with 'MatT' 'AnyChannel' b.
 convert :: (CvtDepth a c, CvtColor b d) => MatT a b -> MatT c d
 convert = cvtColor . cvtDepth
+
 
 -- Conversion of depth. It only depends on the dest Mat, so there are only 7 kinds.
 instance CvtDepth a U8 where
@@ -94,6 +98,7 @@ instance CvtColor C3Luv C3BGR where
   cvtColor = cvtColor' luvToBGR
 
 -- ... ToDo: Many more color conversion instances (ToDo: is there any good way to avoid listing all combinations?)
+-- Maybe I should use Template Haskell.
 
 -- Special case: unknown src type. (ToDo: a should be AnyChannel, or can I just leave it polymorphic?)
 instance CvtColor AnyChannel C1 where
@@ -101,10 +106,15 @@ instance CvtColor AnyChannel C1 where
                 3 -> cvtColor' bgrToGray mat   -- Assuming BGR. since AnyChannel is returned only from readImg.
                 1 -> (MatT m) :: MatT a C1 
                 _ -> error "Only C1 or C3 can be converted to C1"
+instance CvtColor AnyChannel C3 where
+  cvtColor mat@(MatT m) = case numChannels mat of
+                3 -> (MatT m) :: MatT a C3  -- Assuming BGR. since AnyChannel is returned only from readImg.
+                1 -> cvtColor' grayToBGR mat
+                _ -> error "Only C1 or C3 can be converted to C3"
 
 
 
--- Phantom types conversion  Not safe!!!
+-- |Phantom types conversion  Not type safe!!!
 forceCast :: MatT a b -> MatT c d
 forceCast (MatT m) = MatT m
 

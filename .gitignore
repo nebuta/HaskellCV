@@ -5,4 +5,7 @@
 out/**/*
 out/*
 *.hi
-
+build/*
+build/**/*
+.DS_Store
+dist/*

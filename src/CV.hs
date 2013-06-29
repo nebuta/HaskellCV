@@ -1,8 +1,9 @@
 module CV (
   module CV.Core,
+  module CV.IO,
+  module CV.Filter,
   module CV.Types,
-  module CV.Convert,
---  module CV.Draw
+  module CV.Convert
   )
 where
 
@@ -11,4 +12,6 @@ import CV.Core
 import CV.Convert
 import CV.Pixel
 import CV.Instance
---import CV.Draw
+import CV.IO
+import CV.Filter
+import CV.Draw

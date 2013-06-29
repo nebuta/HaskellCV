@@ -5,12 +5,12 @@ license-file:      LICENSE
 author:            Nebuta
 maintainer:        Nebuta
 synopsis:          Purely functional OpenCV binding with rich type support.
-description:       OpenCV 2.4 wrapper with rich type support. You can compose matrix processing functions in a purely functional manner, while taking advantage of high performance of OpenCV.
+description:       OpenCV 2.4 wrapper with rich type support. You can compose matrix processing functions in a purely functional manner, while taking advantage of high performance of native OpenCV library.
 category:          Graphics, Math
 stability:         Experimental
 cabal-version:     >= 1.8
 build-type:        Simple
-homepage:          http://github.com/nebuta
+homepage:          http://github.com/hirokai/HaskellCV
 
 Flag dev
     Description:   Turn on development settings, like auto-reload templates.
@@ -21,43 +21,51 @@ Flag library-only
     Default:       False
 
 library
+    hs-source-dirs:    ./src
     exposed-modules: CV
                      CV.Core
                      CV.Filter
                      CV.Draw
                      CV.Types
+                     CV.Operation
 
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
         ghc-options:   -Wall -O0 -fno-warn-hi-shadowing
     else
-        ghc-options:   -Wall -O2
+        ghc-options:   -w -O2
+
+    extensions:   EmptyDataDecls
+                  , DoAndIfThenElse
 
     build-depends: base                          >= 4          && < 5
+                   , containers
+                   , bytestring
+                   , free
+    include-dirs: ./csrc
+    extra-libraries:     stdc++
+    cpp-options: -m64
+    c-sources: csrc/mainlib.cpp, csrc/filter.cpp, csrc/array.cpp, csrc/draw.cpp, csrc/histogram.cpp
+    -- extra-lib-dirs: ./csrc
+    -- extra-libraries: draw.o
+    C-Sources: csrc/mainlib.cpp csrc/draw.cpp
+    include-dirs: /usr/local/include/opencv
+    pkgconfig-depends: opencv
+
                  
-executable         PaperServer
+executable         HaskellCV
     if flag(library-only)
         Buildable: False
 
-    main-is:           ../main.hs
-    hs-source-dirs:    dist
+    main-is:           ./main.hs
+    hs-source-dirs:    ./src
     build-depends:     base
-                     , PaperServer
-                     , yesod-default
-
+                     , haskell-cv
+                     , containers
+                     , bytestring
     ghc-options:       -threaded -O2
 
-test-suite test
-    type:              exitcode-stdio-1.0
-    main-is:           main.hs
-    hs-source-dirs:    tests
-    ghc-options:       -Wall
+    extensions:   EmptyDataDecls
+                  , DoAndIfThenElse
 
-    build-depends: base
-                 , PaperServer
-                 , yesod-test
-                 , yesod-default
-                 , yesod-core
-                 , persistent                    >= 1.0        && < 1.1
-                 , persistent-mongoDB     >= 1.0        && < 1.1
